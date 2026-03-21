@@ -288,6 +288,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
     <div class="welcome-card">
       <div class="welcome-card-title">Olá! 👋</div>
       <div class="welcome-card-sub">Digite seu nome para acessar<br>seus treinos e avaliação.</div>
+      <div id="loadErrMsg" style="display:none;font-family:var(--fm);font-size:9px;color:var(--fl);letter-spacing:1px;margin-bottom:10px;">Erro de conexão. <span style="text-decoration:underline;cursor:pointer;" onclick="location.reload()">Tentar novamente</span></div>
       <input class="name-inp" type="text" id="nameInp" placeholder="Seu nome completo..." autocomplete="off" autocorrect="off" spellcheck="false">
       <div class="name-err" id="nameErr"></div>
       <button class="btn-enter" onclick="enterAsStudent()">Entrar</button>
@@ -576,24 +577,32 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
    SUPABASE CONFIG
 ═══════════════════════════════════════════════════════ */
 const SUPA_URL = 'https://cpzopjxlqlbpdnbtomsx.supabase.co';
-const SUPA_KEY = 'sb_publishable_zSAvrc7ffCG5EdkjMf8LLg_K6KlBPJd';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwem9wanhscWxicGRuYnRvbXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTY5NjgsImV4cCI6MjA4OTYzMjk2OH0.1lfdOi8udpykkQy83xVRtF32Kib4X2Vl-Hjt-XCOlFM';
 
 async function supa(method, table, body=null, query=''){
   const url = `${SUPA_URL}/rest/v1/${table}${query}`;
-  const opts = {
-    method,
-    headers:{
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': method==='POST' ? 'return=representation' : 'return=representation'
-    }
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': `Bearer ${SUPA_KEY}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Prefer': 'return=representation'
   };
+  const opts = { method, headers };
   if(body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  if(!res.ok){ const err=await res.text(); console.error('Supabase error:',err); return null; }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  try {
+    const res = await fetch(url, opts);
+    if(!res.ok){
+      const err=await res.text();
+      console.error(`Supabase ${method} ${table} error:`, res.status, err);
+      return null;
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
+  } catch(e){
+    console.error(`Supabase fetch error (${method} ${table}):`, e);
+    return null;
+  }
 }
 
 // GET
@@ -689,7 +698,9 @@ async function load(){
     });
   } catch(e){
     console.error('Load error:',e);
-    toast('Erro ao carregar dados',true);
+    toast('Erro ao carregar dados. Verifique sua conexão.',true);
+    const errEl=document.getElementById('loadErrMsg');
+    if(errEl) errEl.style.display='block';
   }
   hideLoading();
 }
