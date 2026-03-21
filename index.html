@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BLOC — Personal Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --bg:       #fafaf8;
+  --bg2:      #f3f2ef;
+  --surface:  #ffffff;
+  --border:   #e8e6e0;
+  --border2:  #d4d1c8;
+  --ink:      #1c1b18;
+  --ink2:     #6b6860;
+  --ink3:     #aeaca6;
+  --hi:       #ff4f1f;
+  --hi2:      #ff7048;
+  --green:    #1a9e5c;
+  --green-bg: #e8f7ef;
+  --aq:#e07a00; --aq-bg:#fff4e0;
+  --nm:#1a6fd4; --nm-bg:#e8f0fd;
+  --fl:#c4003c; --fl-bg:#fce8ef;
+  --dr:#7b2fbe; --dr-bg:#f3ebff;
+  --r: 6px;
+  --fd:'Outfit',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+  --sh:0 1px 3px rgba(28,27,24,.06),0 1px 2px rgba(28,27,24,.04);
+  --sh2:0 2px 8px rgba(28,27,24,.08),0 1px 3px rgba(28,27,24,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--ink);font-family:var(--fd);font-size:14px;max-width:430px;margin:0 auto;min-height:100dvh;overflow-x:hidden;}
+
+/* ─── SCREENS ─── */
+/* Every top-level screen */
+.screen{display:none;min-height:100dvh;}
+.screen.on{display:block;animation:up .18s ease;}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── WELCOME / NAME ENTRY ─── */
+.welcome-wrap{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100dvh;padding:40px 28px;text-align:center;
+}
+.welcome-logo{font-weight:900;font-size:36px;letter-spacing:8px;color:var(--hi);margin-bottom:6px;}
+.welcome-tagline{font-family:var(--fm);font-size:10px;letter-spacing:2px;color:var(--ink3);margin-bottom:48px;}
+.welcome-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:28px 22px;width:100%;box-shadow:var(--sh2);}
+.welcome-card-title{font-weight:800;font-size:20px;margin-bottom:6px;}
+.welcome-card-sub{font-family:var(--fm);font-size:10px;color:var(--ink3);letter-spacing:1px;margin-bottom:22px;line-height:1.8;}
+.name-inp{
+  width:100%;background:var(--bg2);border:1.5px solid var(--border);
+  color:var(--ink);font-family:var(--fd);font-size:16px;font-weight:500;
+  padding:13px 14px;border-radius:var(--r);margin-bottom:12px;
+  transition:border-color .15s;
+}
+.name-inp:focus{outline:none;border-color:var(--hi);}
+.name-inp.shake{animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}60%{transform:translateX(6px)}80%{transform:translateX(-3px)}}
+.name-err{font-family:var(--fm);font-size:10px;color:var(--fl);letter-spacing:1px;min-height:16px;margin-bottom:10px;text-align:left;}
+.btn-enter{
+  width:100%;background:var(--hi);color:#fff;
+  font-family:var(--fd);font-weight:800;font-size:15px;letter-spacing:2px;
+  text-transform:uppercase;padding:14px;border-radius:var(--r);border:none;
+  cursor:pointer;transition:background .15s;
+}
+.btn-enter:hover{background:var(--hi2);}
+.welcome-pt-link{margin-top:28px;font-family:var(--fm);font-size:10px;color:var(--ink3);letter-spacing:1px;cursor:pointer;transition:color .15s;}
+.welcome-pt-link:hover{color:var(--ink2);}
+.welcome-pt-link span{text-decoration:underline;text-underline-offset:3px;}
+
+/* ─── HEADER (shared between student + personal) ─── */
+.hdr{background:var(--surface);border-bottom:1.5px solid var(--border);position:sticky;top:0;z-index:300;}
+.hdr-row1{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 0;}
+.logo{font-weight:900;font-size:22px;letter-spacing:5px;color:var(--hi);line-height:1;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.user-chip{
+  display:flex;align-items:center;gap:7px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:20px;
+  padding:4px 10px 4px 5px;
+}
+.user-av{width:22px;height:22px;border-radius:50%;background:var(--hi);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;color:#fff;flex-shrink:0;}
+.user-name{font-family:var(--fm);font-size:10px;color:var(--ink2);letter-spacing:.5px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-logout{background:none;border:1px solid var(--border2);color:var(--ink3);font-family:var(--fm);font-size:9px;letter-spacing:1px;padding:4px 9px;border-radius:20px;cursor:pointer;transition:all .15s;}
+.btn-logout:hover{border-color:var(--fl);color:var(--fl);}
+
+/* tab bar */
+.tab-bar{display:flex;margin-top:10px;border-top:1px solid var(--border);}
+.tab{flex:1;background:none;border:none;font-family:var(--fd);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);padding:9px 4px 8px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;position:relative;top:1px;}
+.tab.on{color:var(--hi);border-bottom-color:var(--hi);}
+
+/* ─── PANES ─── */
+.pane{display:none;padding:16px;padding-bottom:110px;}
+.pane.on{display:block;animation:up .16s ease;}
+
+/* ─── UTILS ─── */
+.row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-lbl{font-family:var(--fm);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);}
+.notice{text-align:center;padding:40px 16px;font-family:var(--fm);font-size:10px;color:var(--ink3);letter-spacing:1px;line-height:2;}
+.empty-state{text-align:center;padding:52px 16px;}
+.empty-state .ei{font-size:38px;opacity:.2;margin-bottom:10px;}
+.empty-state p{font-family:var(--fm);font-size:10px;color:var(--ink3);letter-spacing:1px;line-height:2;}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:5px;font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 14px;border-radius:var(--r);border:none;cursor:pointer;transition:all .13s;line-height:1;white-space:nowrap;}
+.btn-hi{background:var(--hi);color:#fff;}
+.btn-hi:hover{background:var(--hi2);}
+.btn-out{background:none;border:1.5px solid var(--border2);color:var(--ink2);font-size:11px;padding:6px 12px;}
+.btn-out:hover{border-color:var(--ink);color:var(--ink);}
+.btn-red{background:none;border:1.5px solid rgba(196,0,60,.25);color:var(--fl);font-size:11px;padding:6px 12px;}
+.btn-red:hover{background:var(--fl-bg);}
+.btn-sm{font-size:10px;padding:5px 10px;letter-spacing:.5px;}
+.btn-dashed{width:100%;background:none;border:1.5px dashed var(--border2);color:var(--ink3);font-family:var(--fm);font-size:10px;letter-spacing:1px;padding:9px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-dashed:hover{border-color:var(--hi);color:var(--hi);}
+.ico{background:none;border:none;color:var(--ink3);font-size:14px;cursor:pointer;padding:4px 5px;border-radius:3px;transition:all .12s;}
+.ico:hover{background:var(--bg2);color:var(--ink);}
+.ico.red:hover{color:var(--fl);}
+
+/* ─── STUDENT CARD (personal view) ─── */
+.sc{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);transition:box-shadow .15s;}
+.sc:hover{box-shadow:var(--sh2);}
+.sc-top{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;cursor:pointer;}
+.sc-av{width:42px;height:42px;border-radius:50%;background:var(--hi);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:#fff;flex-shrink:0;}
+.sc-info{flex:1;min-width:0;}
+.sc-name{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sc-meta{font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;margin-top:3px;}
+.pres-box{display:flex;flex-direction:column;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:52px;}
+.pres-n{font-family:var(--fd);font-weight:900;font-size:26px;color:var(--hi);line-height:1;}
+.pres-l{font-family:var(--fm);font-size:7px;letter-spacing:1px;color:var(--ink3);text-transform:uppercase;margin-top:1px;}
+.sc-btns{display:flex;gap:6px;padding:0 14px 12px;border-top:1px solid var(--border);padding-top:10px;}
+
+/* ─── WORKOUT TYPE / LETTERS ─── */
+.type-row{display:flex;gap:8px;margin-bottom:18px;}
+.type-btn{flex:1;background:var(--surface);border:1.5px solid var(--border);color:var(--ink2);font-family:var(--fd);font-weight:700;font-size:16px;letter-spacing:2px;padding:10px 4px;border-radius:var(--r);cursor:pointer;text-align:center;transition:all .15s;box-shadow:var(--sh);}
+.type-btn:hover{border-color:var(--border2);color:var(--ink);}
+.type-btn.on{background:var(--hi);border-color:var(--hi);color:#fff;}
+.letter-row{display:flex;gap:6px;margin-bottom:18px;}
+.letter-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--ink2);font-family:var(--fd);font-weight:700;font-size:17px;padding:8px 18px;border-radius:var(--r);cursor:pointer;transition:all .15s;box-shadow:var(--sh);}
+.letter-btn.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+/* ─── MODALITY ─── */
+.mod{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:var(--sh);}
+.mod-head{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.mod-label{font-family:var(--fm);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink2);font-weight:500;}
+.btn-add-ex{background:none;border:1px solid var(--border2);color:var(--ink3);font-family:var(--fm);font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:3px;cursor:pointer;transition:all .15s;}
+.btn-add-ex:hover{border-color:var(--hi);color:var(--hi);}
+
+/* ─── EXERCISE CARD ─── */
+.ex{border-bottom:1px solid var(--border);}
+.ex:last-child{border-bottom:none;}
+.ex-head{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;user-select:none;}
+.ex-chevron{width:18px;height:18px;border:1.5px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ink3);flex-shrink:0;transition:all .2s;}
+.ex.open .ex-chevron{background:var(--bg2);color:var(--ink2);}
+.ex-name{flex:1;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ex-summ{font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:.5px;flex-shrink:0;}
+.ex-acts{display:flex;gap:1px;flex-shrink:0;}
+.ex-body{display:none;}
+.ex.open .ex-body{display:block;}
+
+/* ─── SERIES TABLE ─── */
+.series-wrap{padding:0 14px;}
+.sr-header{display:grid;grid-template-columns:20px 1fr 60px 74px 26px 26px 26px;gap:6px;padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:5px 5px 0 0;}
+/* student view hides edit/del cols */
+.sr-header.student-view{grid-template-columns:20px 1fr 60px 74px 26px;}
+.sr.student-view{grid-template-columns:20px 1fr 60px 74px 26px;}
+.sr-col{font-family:var(--fm);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;}
+.sr{display:grid;grid-template-columns:20px 1fr 60px 74px 26px 26px 26px;gap:6px;align-items:center;padding:8px 12px;border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);transition:background .12s;}
+.sr.done{background:var(--green-bg);}
+.sr:last-of-type{border-radius:0 0 5px 5px;}
+.sr-n{font-family:var(--fm);font-size:10px;color:var(--ink3);text-align:center;}
+.bdg{display:inline-flex;align-items:center;font-family:var(--fm);font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 6px;border-radius:3px;white-space:nowrap;}
+.bdg-aq{background:var(--aq-bg);color:var(--aq);border:1px solid rgba(224,122,0,.2);}
+.bdg-nm{background:var(--nm-bg);color:var(--nm);border:1px solid rgba(26,111,212,.2);}
+.bdg-fl{background:var(--fl-bg);color:var(--fl);border:1px solid rgba(196,0,60,.2);}
+.bdg-dr{background:var(--dr-bg);color:var(--dr);border:1px solid rgba(123,47,190,.2);}
+.sr-reps{font-family:var(--fm);font-size:10px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.w-inp{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--ink);font-family:var(--fm);font-size:11px;font-weight:700;padding:4px 6px;border-radius:4px;text-align:center;transition:border-color .15s;}
+.w-inp:focus{outline:none;border-color:var(--hi);}
+.sr.done .w-inp{background:rgba(26,158,92,.08);border-color:rgba(26,158,92,.3);color:var(--green);}
+.chk{width:20px;height:20px;border:2px solid var(--border2);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;background:var(--surface);}
+.chk.on{background:var(--green);border-color:var(--green);}
+.chk.on::after{content:'✓';color:#fff;font-size:11px;font-weight:700;}
+.sr-obs{grid-column:1/-1;font-size:11px;color:var(--ink2);font-style:italic;line-height:1.5;padding:0 0 4px;}
+.add-serie-bar{padding:8px 0 12px;}
+
+/* ─── PLANNING ─── */
+.pc{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:var(--sh);}
+.pc-t{font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.fg{margin-bottom:12px;}
+.fl{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:5px;}
+.fi,.fsel,.fta{width:100%;background:var(--bg2);border:1.5px solid var(--border);color:var(--ink);font-family:var(--fd);font-size:14px;padding:9px 12px;border-radius:var(--r);transition:border-color .15s;}
+.fi:focus,.fsel:focus,.fta:focus{outline:none;border-color:var(--hi);}
+.fsel option{background:var(--surface);}
+.fta{resize:vertical;min-height:58px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.goal-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.goal-b{background:var(--bg2);border:1.5px solid var(--border);color:var(--ink2);font-family:var(--fd);font-weight:700;font-size:12px;padding:10px 6px;border-radius:var(--r);cursor:pointer;text-align:center;transition:all .15s;}
+.goal-b.on{background:rgba(255,79,31,.07);border-color:var(--hi);color:var(--hi);}
+.freq-r{display:flex;gap:6px;flex-wrap:wrap;}
+.freq-b{background:var(--bg2);border:1.5px solid var(--border);color:var(--ink2);font-family:var(--fd);font-weight:700;font-size:13px;padding:7px 14px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.freq-b.on{background:rgba(255,79,31,.07);border-color:var(--hi);color:var(--hi);}
+.evo-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border-radius:4px;margin-bottom:6px;font-family:var(--fm);}
+.evo-d{font-size:10px;color:var(--ink3);flex:1;}
+.evo-v{font-size:15px;font-weight:700;color:var(--hi);}
+.evo-x{background:none;border:none;color:var(--ink3);font-size:12px;cursor:pointer;padding:2px 4px;}
+.evo-x:hover{color:var(--fl);}
+.meas-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.meas-i{display:flex;flex-direction:column;gap:4px;}
+.meas-l{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);}
+.meas-inp{background:var(--bg2);border:1.5px solid var(--border);color:var(--ink);font-family:var(--fm);font-size:13px;padding:7px 10px;border-radius:var(--r);width:100%;}
+.meas-inp:focus{outline:none;border-color:var(--hi);}
+.photo-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.photo-t{aspect-ratio:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;position:relative;}
+.photo-t img{width:100%;height:100%;object-fit:cover;}
+.photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* read-only badge on plan fields */
+.readonly-note{font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;padding:4px 0 10px;font-style:italic;}
+
+/* ─── PIN OVERLAY ─── */
+.pin-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:900;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
+.pin-overlay.show{display:flex;animation:up .2s ease;}
+.pin-icon{font-size:36px;margin-bottom:10px;opacity:.3;}
+.pin-title2{font-weight:800;font-size:18px;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;}
+.pin-sub2{font-family:var(--fm);font-size:10px;color:var(--ink3);letter-spacing:1px;margin-bottom:28px;}
+.pin-dots{display:flex;gap:14px;margin-bottom:32px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--hi);border-color:var(--hi);}
+.pin-dot.error{background:var(--fl);border-color:var(--fl);animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}60%{transform:translateX(5px)}80%{transform:translateX(-3px)}}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:280px;}
+.np-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:var(--fd);font-weight:700;font-size:22px;color:var(--ink);box-shadow:var(--sh);transition:all .1s;user-select:none;}
+.np-btn:active{background:var(--bg2);transform:scale(.96);}
+.np-sub{font-family:var(--fm);font-size:7px;letter-spacing:1px;color:var(--ink3);text-transform:uppercase;line-height:1;margin-top:2px;}
+.np-btn.del{font-size:18px;}
+.np-btn.empty{background:transparent;border-color:transparent;box-shadow:none;cursor:default;pointer-events:none;}
+.pin-err{font-family:var(--fm);font-size:10px;color:var(--fl);letter-spacing:1px;margin-top:18px;min-height:16px;text-align:center;}
+.pin-back-link{margin-top:20px;font-family:var(--fm);font-size:10px;color:var(--ink3);cursor:pointer;letter-spacing:1px;text-decoration:underline;text-underline-offset:3px;}
+.pin-back-link:hover{color:var(--ink2);}
+
+/* PIN settings btn */
+.pin-settings-bar{display:flex;justify-content:flex-end;margin-bottom:14px;}
+.pin-settings-btn{background:none;border:1px solid var(--border);color:var(--ink3);font-family:var(--fm);font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
+.pin-settings-btn:hover{border-color:var(--border2);color:var(--ink2);}
+
+/* ─── MODAL SHEET ─── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(28,27,24,.55);z-index:500;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);}
+.overlay.on{display:flex;}
+.sheet{background:var(--surface);border-top:2px solid var(--hi);border-radius:16px 16px 0 0;width:100%;max-width:430px;padding:18px 20px 40px;max-height:88dvh;overflow-y:auto;animation:sheetUp .2s cubic-bezier(.22,.88,.36,1);}
+@keyframes sheetUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sh-handle{width:30px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 16px;}
+.sh-title{font-weight:800;font-size:22px;letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;}
+.sh-actions{display:flex;gap:10px;margin-top:18px;}
+.rt-bar{display:flex;gap:6px;margin-bottom:5px;}
+.rt-b{background:var(--bg2);border:1px solid var(--border);color:var(--ink2);font-family:var(--fm);font-size:11px;padding:3px 9px;border-radius:3px;cursor:pointer;}
+.rt-b:hover{border-color:var(--border2);color:var(--ink);}
+.rt-area{width:100%;background:var(--bg2);border:1.5px solid var(--border);color:var(--ink);font-family:var(--fd);font-size:13px;padding:9px 12px;border-radius:var(--r);min-height:52px;}
+.rt-area:focus{outline:none;border-color:var(--hi);}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(5px);background:var(--ink);color:#fff;font-family:var(--fm);font-size:10px;letter-spacing:1px;padding:7px 18px;border-radius:20px;opacity:0;transition:all .22s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1: WELCOME / NAME ENTRY
+══════════════════════════════════════ -->
+<div class="screen on" id="screen-welcome">
+  <div class="welcome-wrap">
+    <div class="welcome-logo">BLOC</div>
+    <div class="welcome-tagline">PERSONAL TRAINER</div>
+    <div class="welcome-card">
+      <div class="welcome-card-title">Olá! 👋</div>
+      <div class="welcome-card-sub">Digite seu nome para acessar<br>seus treinos e avaliação.</div>
+      <input class="name-inp" type="text" id="nameInp" placeholder="Seu nome completo..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="name-err" id="nameErr"></div>
+      <button class="btn-enter" onclick="enterAsStudent()">Entrar</button>
+    </div>
+    <div class="welcome-pt-link" onclick="openPinOverlay()">
+      Sou o personal trainer → <span>Área restrita</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2: STUDENT VIEW
+══════════════════════════════════════ -->
+<div class="screen" id="screen-student">
+  <div class="hdr">
+    <div class="hdr-row1">
+      <div class="logo">BLOC</div>
+      <div class="hdr-right">
+        <div class="user-chip">
+          <div class="user-av" id="stuAv">?</div>
+          <span class="user-name" id="stuName">—</span>
+        </div>
+        <button class="btn-logout" onclick="logoutStudent()">Sair</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab on" id="stab-treinos"   onclick="stuTab('treinos')">Treinos</button>
+      <button class="tab"    id="stab-avaliacao" onclick="stuTab('avaliacao')">Avaliação</button>
+    </div>
+  </div>
+
+  <!-- student: treinos -->
+  <div class="pane on" id="spane-treinos">
+    <div id="stu-noplan" class="notice" style="display:none">
+      <div style="font-size:32px;margin-bottom:8px;opacity:.2">📋</div>
+      Seu treinador ainda não<br>configurou seu treino.
+    </div>
+    <div id="stu-work" style="display:none">
+      <div class="sec-lbl" id="stu-type-lbl" style="margin-bottom:12px"></div>
+      <div class="letter-row" id="stu-letter-row"></div>
+      <div id="stu-work-panel"></div>
+    </div>
+  </div>
+
+  <!-- student: avaliacao -->
+  <div class="pane" id="spane-avaliacao">
+    <div id="stu-plan-inner"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3: PERSONAL / ADMIN VIEW
+══════════════════════════════════════ -->
+<div class="screen" id="screen-personal">
+  <div class="hdr">
+    <div class="hdr-row1">
+      <div class="logo">BLOC</div>
+      <div class="hdr-right">
+        <div class="user-chip">
+          <div class="user-av" style="background:#1a6fd4">P</div>
+          <span class="user-name">Personal</span>
+        </div>
+        <button class="btn-logout" onclick="logoutPersonal()">Sair</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab on" id="ptab-alunos"    onclick="ptTab('alunos')">Alunos</button>
+      <button class="tab"    id="ptab-treinos"   onclick="ptTab('treinos')">Treinos</button>
+      <button class="tab"    id="ptab-avaliacao" onclick="ptTab('avaliacao')">Avaliação</button>
+    </div>
+  </div>
+
+  <!-- personal: alunos -->
+  <div class="pane on" id="ppane-alunos">
+    <div class="pin-settings-bar">
+      <button class="pin-settings-btn" onclick="openChangePIN()">🔑 Alterar PIN</button>
+    </div>
+    <div class="row-top">
+      <span class="sec-lbl">Alunos cadastrados</span>
+      <button class="btn btn-hi btn-sm" onclick="openStudModal()">+ Aluno</button>
+    </div>
+    <div id="studentList"></div>
+  </div>
+
+  <!-- personal: treinos -->
+  <div class="pane" id="ppane-treinos">
+    <div id="pt-noStud" class="notice">
+      <div style="font-size:34px;margin-bottom:8px;opacity:.18">🏋️</div>
+      Selecione um aluno na aba<br>Alunos para ver os treinos
+    </div>
+    <div id="pt-inner" style="display:none">
+      <div class="sec-lbl" id="pt-lbl" style="margin-bottom:12px"></div>
+      <div class="type-row">
+        <button class="type-btn" id="ty-AB"   onclick="setType('AB')">A/B</button>
+        <button class="type-btn" id="ty-ABC"  onclick="setType('ABC')">A/B/C</button>
+        <button class="type-btn" id="ty-ABCD" onclick="setType('ABCD')">A/B/C/D</button>
+      </div>
+      <div id="pt-noType" class="notice">Selecione o tipo de treino<br>para começar</div>
+      <div id="pt-work" style="display:none">
+        <div class="letter-row" id="pt-letter-row"></div>
+        <div id="pt-work-panel"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- personal: avaliacao -->
+  <div class="pane" id="ppane-avaliacao">
+    <div id="pt-noStudPlan" class="notice">
+      <div style="font-size:34px;margin-bottom:8px;opacity:.18">📋</div>
+      Selecione um aluno na aba<br>Alunos para ver a avaliação
+    </div>
+    <div id="pt-plan-inner" style="display:none">
+      <div class="sec-lbl" id="pt-plan-lbl" style="margin-bottom:12px"></div>
+
+      <div class="pc">
+        <div class="pc-t">Dados Pessoais</div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Idade</label><input class="fi" type="number" id="p-age" placeholder="anos" onchange="savePlan()"></div>
+          <div class="fg"><label class="fl">Altura</label><input class="fi" type="text" id="p-height" placeholder="cm" onchange="savePlan()"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Peso Inicial</label><input class="fi" type="text" id="p-weight" placeholder="kg" onchange="savePlan()"></div>
+          <div class="fg"><label class="fl">% Gordura</label><input class="fi" type="text" id="p-fat" placeholder="%" onchange="savePlan()"></div>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="pc-t">Objetivo</div>
+        <div class="goal-g">
+          <button class="goal-b" id="g-hipertrofia"   onclick="setGoal('hipertrofia')">Hipertrofia</button>
+          <button class="goal-b" id="g-emagrecimento" onclick="setGoal('emagrecimento')">Emagrecimento</button>
+          <button class="goal-b" id="g-performance"   onclick="setGoal('performance')">Performance</button>
+          <button class="goal-b" id="g-reabilitacao"  onclick="setGoal('reabilitacao')">Reabilitação</button>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="pc-t">Planejamento</div>
+        <div class="fg"><label class="fl">Frequência semanal</label>
+          <div class="freq-r">
+            <button class="freq-b" onclick="setFreq(2)">2×</button>
+            <button class="freq-b" onclick="setFreq(3)">3×</button>
+            <button class="freq-b" onclick="setFreq(4)">4×</button>
+            <button class="freq-b" onclick="setFreq(5)">5×</button>
+            <button class="freq-b" onclick="setFreq(6)">6×</button>
+          </div>
+        </div>
+        <div class="fg" style="margin-top:10px"><label class="fl">Estratégia</label><textarea class="fta" id="p-strategy" rows="3" placeholder="Descreva a estratégia..." onchange="savePlan()"></textarea></div>
+        <div class="fg"><label class="fl">Observações</label><textarea class="fta" id="p-obs" rows="2" placeholder="Observações..." onchange="savePlan()"></textarea></div>
+      </div>
+      <div class="pc">
+        <div class="pc-t">Evolução de Peso</div>
+        <div id="pt-weightLog"></div>
+        <div class="frow" style="margin-top:8px">
+          <div><label class="fl">Data</label><input class="fi" type="date" id="evo-date"></div>
+          <div><label class="fl">Peso (kg)</label><input class="fi" type="number" step="0.1" id="evo-kg" placeholder="75.5"></div>
+        </div>
+        <button class="btn-dashed" style="margin-top:8px" onclick="addEvo()">+ Adicionar registro</button>
+      </div>
+      <div class="pc">
+        <div class="pc-t">Medidas Corporais</div>
+        <div class="meas-g">
+          <div class="meas-i"><span class="meas-l">Peito (cm)</span><input class="meas-inp" type="number" id="m-chest"  placeholder="—" onchange="saveMeas()"></div>
+          <div class="meas-i"><span class="meas-l">Cintura (cm)</span><input class="meas-inp" type="number" id="m-waist"  placeholder="—" onchange="saveMeas()"></div>
+          <div class="meas-i"><span class="meas-l">Quadril (cm)</span><input class="meas-inp" type="number" id="m-hip"    placeholder="—" onchange="saveMeas()"></div>
+          <div class="meas-i"><span class="meas-l">Braço (cm)</span><input class="meas-inp" type="number" id="m-arm"    placeholder="—" onchange="saveMeas()"></div>
+          <div class="meas-i"><span class="meas-l">Coxa (cm)</span><input class="meas-inp" type="number" id="m-thigh"  placeholder="—" onchange="saveMeas()"></div>
+          <div class="meas-i"><span class="meas-l">Panturrilha</span><input class="meas-inp" type="number" id="m-calf"   placeholder="—" onchange="saveMeas()"></div>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="pc-t">Fotos</div>
+        <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
+        <button class="btn-dashed" onclick="document.getElementById('photoInput').click()">+ Adicionar fotos</button>
+        <div class="photo-g" id="pt-photoGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PIN OVERLAY ══════════════ -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-icon">🔒</div>
+  <div class="pin-title2">Área do Personal</div>
+  <div class="pin-sub2" id="pinSub">Digite seu PIN de 4 dígitos</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="numpad">
+    <button class="np-btn" onclick="pinKey('1')">1</button>
+    <button class="np-btn" onclick="pinKey('2')">2<span class="np-sub">ABC</span></button>
+    <button class="np-btn" onclick="pinKey('3')">3<span class="np-sub">DEF</span></button>
+    <button class="np-btn" onclick="pinKey('4')">4<span class="np-sub">GHI</span></button>
+    <button class="np-btn" onclick="pinKey('5')">5<span class="np-sub">JKL</span></button>
+    <button class="np-btn" onclick="pinKey('6')">6<span class="np-sub">MNO</span></button>
+    <button class="np-btn" onclick="pinKey('7')">7<span class="np-sub">PQRS</span></button>
+    <button class="np-btn" onclick="pinKey('8')">8<span class="np-sub">TUV</span></button>
+    <button class="np-btn" onclick="pinKey('9')">9<span class="np-sub">WXYZ</span></button>
+    <button class="np-btn empty"></button>
+    <button class="np-btn" onclick="pinKey('0')">0</button>
+    <button class="np-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-err" id="pinErr"></div>
+  <div class="pin-back-link" onclick="hidePinOverlay()">← Voltar</div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+<!-- student modal -->
+<div class="overlay" id="mStud">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="mStudTitle">Novo Aluno</div>
+    <div class="fg"><label class="fl">Nome completo</label><input class="fi" type="text" id="s-name" placeholder="Nome..."></div>
+    <div class="sh-actions">
+      <button class="btn btn-out" onclick="closeModal('mStud')">Cancelar</button>
+      <button class="btn btn-hi" onclick="saveStud()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- exercise modal -->
+<div class="overlay" id="mEx">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="mExTitle">Novo Exercício</div>
+    <div class="fg"><label class="fl">Nome do exercício</label><input class="fi" type="text" id="ex-name" placeholder="Ex: Supino halter..."></div>
+    <div class="sh-actions">
+      <button class="btn btn-out" onclick="closeModal('mEx')">Cancelar</button>
+      <button class="btn btn-hi" onclick="saveEx()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- serie modal -->
+<div class="overlay" id="mSr">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="mSrTitle">Nova Série</div>
+    <div class="fg"><label class="fl">Tipo</label>
+      <select class="fsel" id="sr-type">
+        <option value="aquecimento">Aquecimento</option>
+        <option value="normal">Normal</option>
+        <option value="falha">Falha</option>
+        <option value="drop">Drop</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Repetições</label><input class="fi" type="text" id="sr-reps" placeholder="Ex: 8–12"></div>
+    <div class="fg"><label class="fl">Observações</label>
+      <div class="rt-bar">
+        <button class="rt-b" onclick="fmt('bold')"><b>B</b></button>
+        <button class="rt-b" onclick="fmt('italic')"><i>I</i></button>
+      </div>
+      <div class="rt-area" id="sr-obs" contenteditable="true"></div>
+    </div>
+    <div class="sh-actions">
+      <button class="btn btn-out" onclick="closeModal('mSr')">Cancelar</button>
+      <button class="btn btn-hi" onclick="saveSr()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- change PIN modal -->
+<div class="overlay" id="mPIN">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Alterar PIN</div>
+    <div class="fg"><label class="fl">PIN atual</label><input class="fi" type="password" inputmode="numeric" maxlength="4" id="cp-old" placeholder="••••"></div>
+    <div class="fg"><label class="fl">Novo PIN (4 dígitos)</label><input class="fi" type="password" inputmode="numeric" maxlength="4" id="cp-new" placeholder="••••"></div>
+    <div class="fg"><label class="fl">Confirmar PIN</label><input class="fi" type="password" inputmode="numeric" maxlength="4" id="cp-conf" placeholder="••••"></div>
+    <div style="font-family:var(--fm);font-size:10px;color:var(--fl);min-height:16px;margin-top:4px;" id="pinChgErr"></div>
+    <div class="sh-actions">
+      <button class="btn btn-out" onclick="closeModal('mPIN')">Cancelar</button>
+      <button class="btn btn-hi" onclick="saveChangePIN()">Salvar PIN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   DATA MODEL
+   Student { id, name, presences, workoutType, activeWorkout,
+             exercises:{}, plan:{}, measures:{}, weightLog:[], photos:[] }
+   Exercise { id, name, _open, series:[] }
+   Serie    { id, type, reps, obs, completed, weight }
+═══════════════════════════════════════════════════════ */
+const TW={AB:['A','B'],ABC:['A','B','C'],ABCD:['A','B','C','D']};
+const MODS=[{k:'alongamento',l:'Alongamento / Mobilidade'},{k:'musculacao',l:'Musculação'},{k:'cardio',l:'Cárdio'}];
+const BADGE={aquecimento:'aq',normal:'nm',falha:'fl',drop:'dr'};
+const BADGE_LBL={aquecimento:'AQUEC',normal:'NORMAL',falha:'FALHA',drop:'DROP'};
+const DEFAULT_PIN='1234';
+
+let DB={students:[]};
+let activeSid=null;   // personal: selected student id
+let currentStu=null;  // student: logged-in student object (reference)
+let mode=null;        // 'student' | 'personal'
+let editSid=null;
+let exCtx=null;
+let srCtx=null;
+
+/* ── persist ── */
+function load(){try{const r=localStorage.getItem('bloc_v5');if(r)DB=JSON.parse(r);}catch(e){}}
+function persist(){try{localStorage.setItem('bloc_v5',JSON.stringify(DB));toast('✓ Salvo');}catch(e){}}
+function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1300);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function getStu(id){return DB.students.find(s=>s.id===(id||activeSid));}
+function getPin(){return localStorage.getItem('bloc_pin')||DEFAULT_PIN;}
+
+/* ── modals ── */
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
+function fmt(cmd){document.getElementById('sr-obs').focus();document.execCommand(cmd);}
+
+/* ── screens ── */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById('screen-'+name).classList.add('on');
+}
+
+/* ════════════════════════════════════════
+   WELCOME / NAME ENTRY
+════════════════════════════════════════ */
+document.getElementById('nameInp').addEventListener('keydown',e=>{if(e.key==='Enter')enterAsStudent();});
+
+// Normaliza: remove acentos, caixa baixa, espaços extras
+function normName(s){
+  return (s||'')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/\s+/g,' ');
+}
+
+function enterAsStudent(){
+  const raw=document.getElementById('nameInp').value;
+  const errEl=document.getElementById('nameErr');
+
+  if(!raw.trim()){
+    errEl.textContent='Por favor, digite seu nome.';
+    document.getElementById('nameInp').classList.add('shake');
+    setTimeout(()=>document.getElementById('nameInp').classList.remove('shake'),400);
+    return;
+  }
+
+  // busca ignorando acentos, maiusculas e espacos extras
+  const found=DB.students.find(s=>normName(s.name)===normName(raw));
+  if(!found){
+    errEl.textContent='Nome não encontrado. Confirme com seu treinador.';
+    document.getElementById('nameInp').classList.add('shake');
+    setTimeout(()=>document.getElementById('nameInp').classList.remove('shake'),400);
+    return;
+  }
+
+  errEl.textContent='';
+  currentStu=found;
+  mode='student';
+  launchStudentView();
+}
+
+function launchStudentView(){
+  const s=currentStu;
+  document.getElementById('stuAv').textContent=(s.name||'?')[0].toUpperCase();
+  document.getElementById('stuName').textContent=s.name;
+  showScreen('student');
+  stuTab('treinos');
+}
+
+function logoutStudent(){
+  currentStu=null;mode=null;
+  document.getElementById('nameInp').value='';
+  document.getElementById('nameErr').textContent='';
+  showScreen('welcome');
+}
+
+/* ════════════════════════════════════════
+   STUDENT TABS
+════════════════════════════════════════ */
+function stuTab(name){
+  ['treinos','avaliacao'].forEach(t=>{
+    document.getElementById('spane-'+t).classList.toggle('on',t===name);
+    document.getElementById('stab-'+t).classList.toggle('on',t===name);
+  });
+  if(name==='treinos')   renderStudentTreinos();
+  if(name==='avaliacao') renderStudentAvaliacao();
+}
+
+/* ── student: treinos ── */
+function renderStudentTreinos(){
+  const s=currentStu; if(!s) return;
+  const noplan=document.getElementById('stu-noplan');
+  const work=document.getElementById('stu-work');
+  if(!s.workoutType){noplan.style.display='block';work.style.display='none';return;}
+  noplan.style.display='none';work.style.display='block';
+  document.getElementById('stu-type-lbl').textContent='TREINO '+s.workoutType+' — '+s.name.toUpperCase();
+  renderStuLetterRow(s);
+  renderStuWorkPanel(s);
+}
+
+function renderStuLetterRow(s){
+  const ws=TW[s.workoutType];
+  document.getElementById('stu-letter-row').innerHTML=ws.map(w=>
+    `<button class="letter-btn ${w===s.activeWorkout?'on':''}" onclick="stuSwitchW('${w}')">Treino ${w}</button>`
+  ).join('');
+}
+
+function stuSwitchW(w){
+  if(!currentStu) return;
+  currentStu.activeWorkout=w;
+  document.querySelectorAll('#stu-letter-row .letter-btn').forEach(b=>b.classList.toggle('on',b.textContent.trim()==='Treino '+w));
+  renderStuWorkPanel(currentStu);
+}
+
+function renderStuWorkPanel(s){
+  const w=s.activeWorkout;
+  document.getElementById('stu-work-panel').innerHTML=
+    MODS.map(mod=>{
+      const key=`${w}-${mod.k}`;
+      const exs=s.exercises[key]||[];
+      return `
+        <div class="mod">
+          <div class="mod-head"><span class="mod-label">${mod.l}</span></div>
+          ${exs.length===0
+            ?`<div style="padding:14px 16px;font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;">Nenhum exercício</div>`
+            :exs.map((ex,i)=>renderStuExCard(ex,s,w,mod.k,i,key)).join('')
+          }
+        </div>`;
+    }).join('');
+}
+
+function renderStuExCard(ex,s,w,mod,exIdx,key){
+  const series=ex.series||[];
+  const doneC=series.filter(sr=>sr.completed).length;
+  const open=ex._open||false;
+  return `
+    <div class="ex ${open?'open':''}" id="sex-${key}-${exIdx}">
+      <div class="ex-head" onclick="stuToggleEx('${key}',${exIdx})">
+        <div class="ex-chevron">${open?'▲':'▼'}</div>
+        <div class="ex-name">${esc(ex.name)||'Sem nome'}</div>
+        <span class="ex-summ">${doneC}/${series.length} séries</span>
+      </div>
+      <div class="ex-body">
+        <div class="series-wrap">
+          ${series.length>0?`
+            <div class="sr-header student-view">
+              <div class="sr-col">#</div><div class="sr-col">Tipo</div>
+              <div class="sr-col">Reps</div><div class="sr-col">Peso</div>
+              <div class="sr-col">✓</div>
+            </div>
+            ${series.map((sr,si)=>renderStuSrRow(sr,s.id,w,mod,exIdx,si)).join('')}
+          `:`<div style="padding:10px 0 4px;font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;">Nenhuma série.</div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderStuSrRow(sr,sid_,w,mod,exIdx,si){
+  const bdg=BADGE[sr.type]||'nm';
+  const lbl=BADGE_LBL[sr.type]||sr.type;
+  return `
+    <div class="sr student-view ${sr.completed?'done':''}" id="ssr-${sid_}-${w}-${mod}-${exIdx}-${si}">
+      <span class="sr-n">${si+1}</span>
+      <span class="bdg bdg-${bdg}">${lbl}</span>
+      <span class="sr-reps">${esc(sr.reps)||'—'}</span>
+      <input class="w-inp" type="text" value="${esc(sr.weight||'')}" placeholder="0 kg"
+             onchange="stuSetW('${sid_}','${w}','${mod}',${exIdx},${si},this.value)">
+      <div class="chk ${sr.completed?'on':''}" onclick="stuToggleSr('${sid_}','${w}','${mod}',${exIdx},${si})"></div>
+      ${sr.obs?`<div class="sr-obs">${sr.obs}</div>`:''}
+    </div>`;
+}
+
+function stuToggleEx(key,exIdx){
+  if(!currentStu) return;
+  const ex=(currentStu.exercises[key]||[])[exIdx]; if(!ex) return;
+  ex._open=!ex._open;
+  renderStuWorkPanel(currentStu);
+}
+
+function stuToggleSr(sid_,w,mod,exIdx,si){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
+  sr.completed=!sr.completed;
+  s.presences=Math.max(0,(s.presences||0)+(sr.completed?1:-1));
+  (s.exercises[key][exIdx])._open=true;
+  persist();
+  renderStuWorkPanel(s);
+}
+
+function stuSetW(sid_,w,mod,exIdx,si,val){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
+  sr.weight=val;
+  persist();
+}
+
+/* ── student: avaliação ── */
+function renderStudentAvaliacao(){
+  const s=currentStu; if(!s) return;
+  const p=s.plan||{};
+  const m=s.measures||{};
+  const log=s.weightLog||[];
+  const photos=s.photos||[];
+
+  const goalLabels={hipertrofia:'Hipertrofia',emagrecimento:'Emagrecimento',performance:'Performance',reabilitacao:'Reabilitação'};
+  const freqLabel=p.freq?p.freq+'× por semana':'—';
+
+  // Build editable weight + measures, readonly plan info
+  document.getElementById('stu-plan-inner').innerHTML=`
+    <div class="pc">
+      <div class="pc-t">Meus Dados</div>
+      <div class="readonly-note">Informações cadastradas pelo seu personal trainer.</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Idade</label><div class="fi" style="background:var(--bg2);display:flex;align-items:center;">${esc(p.age)||'—'}</div></div>
+        <div class="fg"><label class="fl">Altura</label><div class="fi" style="background:var(--bg2);display:flex;align-items:center;">${esc(p.height)||'—'}</div></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Objetivo</label><div class="fi" style="background:var(--bg2);display:flex;align-items:center;">${goalLabels[p.goal]||'—'}</div></div>
+        <div class="fg"><label class="fl">Frequência</label><div class="fi" style="background:var(--bg2);display:flex;align-items:center;">${freqLabel}</div></div>
+      </div>
+      ${p.strategy?`<div class="fg"><label class="fl">Estratégia</label><div class="fi" style="background:var(--bg2);min-height:60px;white-space:pre-wrap;">${esc(p.strategy)}</div></div>`:''}
+    </div>
+
+    <div class="pc">
+      <div class="pc-t">Meu Peso — Evolução</div>
+      <div id="stu-weightLog">${renderWeightLogHTML(log)}</div>
+      <div class="frow" style="margin-top:8px">
+        <div><label class="fl">Data</label><input class="fi" type="date" id="stu-evo-date" value="${new Date().toISOString().split('T')[0]}"></div>
+        <div><label class="fl">Peso (kg)</label><input class="fi" type="number" step="0.1" id="stu-evo-kg" placeholder="75.5"></div>
+      </div>
+      <button class="btn-dashed" style="margin-top:8px" onclick="stuAddEvo()">+ Registrar meu peso</button>
+    </div>
+
+    <div class="pc">
+      <div class="pc-t">Minhas Medidas</div>
+      <div class="meas-g">
+        <div class="meas-i"><span class="meas-l">Peito (cm)</span><input class="meas-inp" type="number" id="sm-chest"  value="${esc(m.chest||'')}"  placeholder="—" onchange="stuSaveMeas()"></div>
+        <div class="meas-i"><span class="meas-l">Cintura (cm)</span><input class="meas-inp" type="number" id="sm-waist"  value="${esc(m.waist||'')}"  placeholder="—" onchange="stuSaveMeas()"></div>
+        <div class="meas-i"><span class="meas-l">Quadril (cm)</span><input class="meas-inp" type="number" id="sm-hip"    value="${esc(m.hip||'')}"    placeholder="—" onchange="stuSaveMeas()"></div>
+        <div class="meas-i"><span class="meas-l">Braço (cm)</span><input class="meas-inp" type="number" id="sm-arm"    value="${esc(m.arm||'')}"    placeholder="—" onchange="stuSaveMeas()"></div>
+        <div class="meas-i"><span class="meas-l">Coxa (cm)</span><input class="meas-inp" type="number" id="sm-thigh"  value="${esc(m.thigh||'')}"  placeholder="—" onchange="stuSaveMeas()"></div>
+        <div class="meas-i"><span class="meas-l">Panturrilha</span><input class="meas-inp" type="number" id="sm-calf"   value="${esc(m.calf||'')}"   placeholder="—" onchange="stuSaveMeas()"></div>
+      </div>
+    </div>
+
+    <div class="pc">
+      <div class="pc-t">Minhas Fotos</div>
+      <input type="file" id="stuPhotoInput" accept="image/*" multiple style="display:none" onchange="stuHandlePhotos(event)">
+      <button class="btn-dashed" onclick="document.getElementById('stuPhotoInput').click()">+ Adicionar foto</button>
+      <div class="photo-g" id="stu-photoGrid">${renderPhotoGridHTML(photos,'stuDelPhoto')}</div>
+    </div>
+  `;
+}
+
+function renderWeightLogHTML(log){
+  if(!log.length) return `<div style="font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;padding:6px 0 4px;">Nenhum registro ainda</div>`;
+  return log.map((e,i)=>{
+    const [y,m,d]=e.date.split('-');
+    return `<div class="evo-row"><span class="evo-d">${d}/${m}/${y}</span><span class="evo-v">${e.weight} kg</span><button class="evo-x" onclick="stuDelEvo(${i})">✕</button></div>`;
+  }).join('');
+}
+
+function renderPhotoGridHTML(photos,delFn){
+  return photos.map((src,i)=>`
+    <div class="photo-t"><img src="${src}"><button class="photo-del" onclick="${delFn}(${i})">✕</button></div>
+  `).join('');
+}
+
+function stuAddEvo(){
+  const s=currentStu; if(!s) return;
+  const date=document.getElementById('stu-evo-date').value;
+  const weight=document.getElementById('stu-evo-kg').value;
+  if(!date||!weight) return;
+  if(!s.weightLog) s.weightLog=[];
+  s.weightLog.push({date,weight});
+  s.weightLog.sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('stu-evo-kg').value='';
+  persist();
+  document.getElementById('stu-weightLog').innerHTML=renderWeightLogHTML(s.weightLog);
+}
+
+function stuDelEvo(i){
+  const s=currentStu; if(!s) return;
+  s.weightLog.splice(i,1); persist();
+  document.getElementById('stu-weightLog').innerHTML=renderWeightLogHTML(s.weightLog);
+}
+
+function stuSaveMeas(){
+  const s=currentStu; if(!s) return;
+  s.measures={
+    chest:document.getElementById('sm-chest').value,
+    waist:document.getElementById('sm-waist').value,
+    hip:document.getElementById('sm-hip').value,
+    arm:document.getElementById('sm-arm').value,
+    thigh:document.getElementById('sm-thigh').value,
+    calf:document.getElementById('sm-calf').value
+  };
+  persist();
+}
+
+function stuHandlePhotos(evt){
+  const s=currentStu; if(!s) return;
+  if(!s.photos) s.photos=[];
+  Array.from(evt.target.files).forEach(f=>{
+    const r=new FileReader(); r.onload=e=>{
+      s.photos.push(e.target.result); persist();
+      document.getElementById('stu-photoGrid').innerHTML=renderPhotoGridHTML(s.photos,'stuDelPhoto');
+    }; r.readAsDataURL(f);
+  });
+  evt.target.value='';
+}
+
+function stuDelPhoto(i){
+  const s=currentStu; if(!s) return;
+  s.photos.splice(i,1); persist();
+  document.getElementById('stu-photoGrid').innerHTML=renderPhotoGridHTML(s.photos,'stuDelPhoto');
+}
+
+/* ════════════════════════════════════════
+   PIN OVERLAY
+════════════════════════════════════════ */
+let pinBuffer='';
+
+function openPinOverlay(){
+  pinBuffer='';
+  updatePinDots();
+  document.getElementById('pinErr').textContent='';
+  document.getElementById('pinSub').textContent='Digite seu PIN de 4 dígitos';
+  document.getElementById('pinOverlay').classList.add('show');
+}
+function hidePinOverlay(){document.getElementById('pinOverlay').classList.remove('show');}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.remove('filled','error');
+    if(i<pinBuffer.length) d.classList.add('filled');
+  }
+}
+function flashPinError(msg){
+  document.getElementById('pinErr').textContent=msg;
+  for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.add('error');
+  pinBuffer='';
+  setTimeout(()=>{
+    for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.remove('error','filled');
+    document.getElementById('pinErr').textContent='';
+  },900);
+}
+function pinKey(digit){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=digit; updatePinDots();
+  if(pinBuffer.length===4) setTimeout(handlePinSubmit,120);
+}
+function pinDel(){if(pinBuffer.length>0){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}}
+function handlePinSubmit(){
+  if(pinBuffer===getPin()){
+    hidePinOverlay();
+    mode='personal';
+    showScreen('personal');
+    ptTab('alunos');
+  } else {
+    flashPinError('PIN incorreto. Tente novamente.');
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('pinOverlay').classList.contains('show')) return;
+  if(e.key>='0'&&e.key<='9') pinKey(e.key);
+  if(e.key==='Backspace') pinDel();
+  if(e.key==='Escape') hidePinOverlay();
+});
+
+function logoutPersonal(){
+  activeSid=null; mode=null;
+  showScreen('welcome');
+}
+
+/* ── change PIN ── */
+function openChangePIN(){
+  ['cp-old','cp-new','cp-conf'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pinChgErr').textContent='';
+  openModal('mPIN');
+  setTimeout(()=>document.getElementById('cp-old').focus(),150);
+}
+function saveChangePIN(){
+  const oldV=document.getElementById('cp-old').value.trim();
+  const newV=document.getElementById('cp-new').value.trim();
+  const confV=document.getElementById('cp-conf').value.trim();
+  const err=document.getElementById('pinChgErr');
+  if(oldV!==getPin()){err.textContent='PIN atual incorreto.';return;}
+  if(!/^\d{4}$/.test(newV)){err.textContent='Novo PIN deve ter exatamente 4 dígitos.';return;}
+  if(newV!==confV){err.textContent='Confirmação não coincide.';return;}
+  localStorage.setItem('bloc_pin',newV);
+  closeModal('mPIN');
+  toast('✓ PIN alterado com sucesso');
+}
+
+/* ════════════════════════════════════════
+   PERSONAL TABS
+════════════════════════════════════════ */
+function ptTab(name){
+  ['alunos','treinos','avaliacao'].forEach(t=>{
+    document.getElementById('ppane-'+t).classList.toggle('on',t===name);
+    document.getElementById('ptab-'+t).classList.toggle('on',t===name);
+  });
+  if(name==='treinos')   renderPtTreinos();
+  if(name==='avaliacao') renderPtAvaliacao();
+}
+
+/* ── personal: alunos ── */
+function renderStudents(){
+  const el=document.getElementById('studentList');
+  if(!DB.students.length){
+    el.innerHTML=`<div class="empty-state"><div class="ei">👥</div><p>Nenhum aluno cadastrado.<br>Toque em "+ Aluno" para começar.</p></div>`;
+    return;
+  }
+  el.innerHTML=DB.students.map(s=>`
+    <div class="sc">
+      <div class="sc-top" onclick="ptSelectStudent('${s.id}')">
+        <div class="sc-av">${(s.name||'?')[0].toUpperCase()}</div>
+        <div class="sc-info">
+          <div class="sc-name">${esc(s.name)}</div>
+          <div class="sc-meta">${s.workoutType?'TREINO '+s.workoutType:'SEM PLANO'}</div>
+        </div>
+        <div class="pres-box">
+          <div class="pres-n">${s.presences||0}</div>
+          <div class="pres-l">Pres.</div>
+        </div>
+      </div>
+      <div class="sc-btns">
+        <button class="btn btn-out btn-sm" onclick="openStudModal('${s.id}')">✏️ Editar</button>
+        <button class="btn btn-red btn-sm" onclick="delStud('${s.id}')">🗑 Excluir</button>
+        <button class="btn btn-hi btn-sm" style="margin-left:auto" onclick="ptSelectStudent('${s.id}')">Treinos →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openStudModal(id){
+  editSid=id||null;
+  document.getElementById('mStudTitle').textContent=id?'Editar Aluno':'Novo Aluno';
+  document.getElementById('s-name').value=id?getStu(id).name:'';
+  openModal('mStud');
+  setTimeout(()=>document.getElementById('s-name').focus(),150);
+}
+function saveStud(){
+  const name=document.getElementById('s-name').value.trim();
+  if(!name){document.getElementById('s-name').focus();return;}
+  if(editSid){getStu(editSid).name=name;}
+  else{DB.students.push({id:uid(),name,presences:0,workoutType:null,activeWorkout:'A',exercises:{},plan:{},measures:{},weightLog:[],photos:[]});}
+  closeModal('mStud');persist();renderStudents();
+}
+function delStud(id){
+  if(!confirm('Excluir aluno e todos os dados?')) return;
+  DB.students=DB.students.filter(s=>s.id!==id);
+  if(activeSid===id) activeSid=null;
+  persist();renderStudents();
+}
+function ptSelectStudent(id){
+  activeSid=id;
+  ptTab('treinos');
+}
+
+/* ── personal: treinos ── */
+function renderPtTreinos(){
+  const s=getStu();
+  document.getElementById('pt-noStud').style.display=s?'none':'block';
+  document.getElementById('pt-inner').style.display=s?'block':'none';
+  if(!s) return;
+  document.getElementById('pt-lbl').textContent=s.name.toUpperCase();
+  ['AB','ABC','ABCD'].forEach(t=>document.getElementById('ty-'+t).classList.toggle('on',s.workoutType===t));
+  if(!s.workoutType){
+    document.getElementById('pt-noType').style.display='block';
+    document.getElementById('pt-work').style.display='none';
+  } else {
+    document.getElementById('pt-noType').style.display='none';
+    document.getElementById('pt-work').style.display='block';
+    renderPtLetterRow(s);renderPtWorkPanel(s);
+  }
+}
+function setType(type){
+  const s=getStu(); if(!s) return;
+  s.workoutType=type;
+  const ws=TW[type];
+  if(!ws.includes(s.activeWorkout)) s.activeWorkout=ws[0];
+  persist();renderStudents();renderPtTreinos();
+}
+function renderPtLetterRow(s){
+  const ws=TW[s.workoutType];
+  document.getElementById('pt-letter-row').innerHTML=ws.map(w=>
+    `<button class="letter-btn ${w===s.activeWorkout?'on':''}" onclick="ptSwitchW('${w}')">Treino ${w}</button>`
+  ).join('');
+}
+function ptSwitchW(w){
+  const s=getStu(); if(!s) return;
+  s.activeWorkout=w;
+  document.querySelectorAll('#pt-letter-row .letter-btn').forEach(b=>b.classList.toggle('on',b.textContent.trim()==='Treino '+w));
+  renderPtWorkPanel(s);
+}
+function renderPtWorkPanel(s){
+  document.getElementById('pt-work-panel').innerHTML=
+    MODS.map(mod=>{
+      const key=`${s.activeWorkout}-${mod.k}`;
+      const exs=s.exercises[key]||[];
+      return `
+        <div class="mod">
+          <div class="mod-head">
+            <span class="mod-label">${mod.l}</span>
+            <button class="btn-add-ex" onclick="openExModal('${s.id}','${s.activeWorkout}','${mod.k}',null)">+ Exercício</button>
+          </div>
+          ${exs.length===0
+            ?`<div style="padding:14px 16px;font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;">Nenhum exercício</div>`
+            :exs.map((ex,i)=>renderPtExCard(ex,s,s.activeWorkout,mod.k,i,key)).join('')}
+        </div>`;
+    }).join('');
+}
+function renderPtExCard(ex,s,w,mod,exIdx,key){
+  const series=ex.series||[];
+  const doneC=series.filter(sr=>sr.completed).length;
+  const open=ex._open||false;
+  const sid_=s.id;
+  return `
+    <div class="ex ${open?'open':''}" id="pex-${key}-${exIdx}">
+      <div class="ex-head" onclick="ptToggleEx('${sid_}','${key}',${exIdx})">
+        <div class="ex-chevron">${open?'▲':'▼'}</div>
+        <div class="ex-name">${esc(ex.name)||'Sem nome'}</div>
+        <span class="ex-summ">${doneC}/${series.length} séries</span>
+        <div class="ex-acts" onclick="event.stopPropagation()">
+          <button class="ico" onclick="openExModal('${sid_}','${w}','${mod}',${exIdx})">✏️</button>
+          <button class="ico red" onclick="delEx('${sid_}','${w}','${mod}',${exIdx})">🗑</button>
+        </div>
+      </div>
+      <div class="ex-body">
+        <div class="series-wrap">
+          ${series.length>0?`
+            <div class="sr-header">
+              <div class="sr-col">#</div><div class="sr-col">Tipo</div>
+              <div class="sr-col">Reps</div><div class="sr-col">Peso</div>
+              <div class="sr-col">✓</div><div class="sr-col"></div><div class="sr-col"></div>
+            </div>
+            ${series.map((sr,si)=>renderPtSrRow(sr,sid_,w,mod,exIdx,si)).join('')}
+          `:`<div style="padding:10px 0 4px;font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;">Nenhuma série ainda.</div>`}
+          <div class="add-serie-bar">
+            <button class="btn-dashed" onclick="openSrModal('${sid_}','${w}','${mod}',${exIdx},null)">+ Adicionar série</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function renderPtSrRow(sr,sid_,w,mod,exIdx,si){
+  const bdg=BADGE[sr.type]||'nm';
+  const lbl=BADGE_LBL[sr.type]||sr.type;
+  return `
+    <div class="sr ${sr.completed?'done':''}" id="psr-${sid_}-${w}-${mod}-${exIdx}-${si}">
+      <span class="sr-n">${si+1}</span>
+      <span class="bdg bdg-${bdg}">${lbl}</span>
+      <span class="sr-reps">${esc(sr.reps)||'—'}</span>
+      <input class="w-inp" type="text" value="${esc(sr.weight||'')}" placeholder="0 kg"
+             onchange="ptSetW('${sid_}','${w}','${mod}',${exIdx},${si},this.value)"
+             onclick="event.stopPropagation()">
+      <div class="chk ${sr.completed?'on':''}" onclick="ptToggleSr('${sid_}','${w}','${mod}',${exIdx},${si})"></div>
+      <button class="ico" onclick="openSrModal('${sid_}','${w}','${mod}',${exIdx},${si})">✏️</button>
+      <button class="ico red" onclick="delSr('${sid_}','${w}','${mod}',${exIdx},${si})">🗑</button>
+      ${sr.obs?`<div class="sr-obs">${sr.obs}</div>`:''}
+    </div>`;
+}
+function ptToggleEx(sid_,key,exIdx){
+  const s=getStu(sid_); if(!s) return;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  ex._open=!ex._open; renderPtWorkPanel(s);
+}
+function ptToggleSr(sid_,w,mod,exIdx,si){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
+  sr.completed=!sr.completed;
+  s.presences=Math.max(0,(s.presences||0)+(sr.completed?1:-1));
+  (s.exercises[key][exIdx])._open=true;
+  persist();renderStudents();renderPtWorkPanel(s);
+}
+function ptSetW(sid_,w,mod,exIdx,si,val){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
+  sr.weight=val; persist();
+}
+
+/* ── exercise/serie CRUD ── */
+function openExModal(sid_,w,mod,exIdx){
+  exCtx={sid:sid_,w,mod,exIdx};
+  document.getElementById('mExTitle').textContent=exIdx!==null?'Editar Exercício':'Novo Exercício';
+  document.getElementById('ex-name').value=exIdx!==null?(getStu(sid_).exercises[`${w}-${mod}`]||[])[exIdx]?.name||'':'';
+  openModal('mEx');setTimeout(()=>document.getElementById('ex-name').focus(),150);
+}
+function saveEx(){
+  if(!exCtx) return;
+  const {sid:sid_,w,mod,exIdx}=exCtx;
+  const name=document.getElementById('ex-name').value.trim();
+  if(!name){document.getElementById('ex-name').focus();return;}
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  if(!s.exercises[key]) s.exercises[key]=[];
+  if(exIdx!==null){s.exercises[key][exIdx].name=name;}
+  else{s.exercises[key].push({id:uid(),name,series:[],_open:true});}
+  closeModal('mEx');persist();renderPtWorkPanel(s);
+}
+function delEx(sid_,w,mod,exIdx){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  if(!confirm('Excluir exercício?')) return;
+  ((s.exercises[key]||[])[exIdx]?.series||[]).forEach(sr=>{if(sr.completed)s.presences=Math.max(0,(s.presences||0)-1);});
+  s.exercises[key].splice(exIdx,1);
+  persist();renderStudents();renderPtWorkPanel(s);
+}
+function openSrModal(sid_,w,mod,exIdx,srIdx){
+  srCtx={sid:sid_,w,mod,exIdx,srIdx};
+  document.getElementById('mSrTitle').textContent=srIdx!==null?'Editar Série':'Nova Série';
+  if(srIdx!==null){
+    const sr=((getStu(sid_).exercises[`${w}-${mod}`]||[])[exIdx]?.series||[])[srIdx];
+    document.getElementById('sr-type').value=sr?.type||'normal';
+    document.getElementById('sr-reps').value=sr?.reps||'';
+    document.getElementById('sr-obs').innerHTML=sr?.obs||'';
+  } else {
+    document.getElementById('sr-type').value='normal';
+    document.getElementById('sr-reps').value='';
+    document.getElementById('sr-obs').innerHTML='';
+  }
+  openModal('mSr');setTimeout(()=>document.getElementById('sr-reps').focus(),150);
+}
+function saveSr(){
+  if(!srCtx) return;
+  const {sid:sid_,w,mod,exIdx,srIdx}=srCtx;
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  const sr={id:uid(),type:document.getElementById('sr-type').value,reps:document.getElementById('sr-reps').value.trim(),obs:document.getElementById('sr-obs').innerHTML.trim(),completed:false,weight:''};
+  if(srIdx!==null){const orig=ex.series[srIdx];sr.completed=orig.completed;sr.weight=orig.weight;sr.id=orig.id;ex.series[srIdx]=sr;}
+  else{ex.series.push(sr);}
+  ex._open=true;
+  closeModal('mSr');persist();renderPtWorkPanel(s);
+}
+function delSr(sid_,w,mod,exIdx,si){
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  if(!confirm('Excluir série?')) return;
+  if(ex.series[si]?.completed) s.presences=Math.max(0,(s.presences||0)-1);
+  ex.series.splice(si,1);ex._open=true;
+  persist();renderStudents();renderPtWorkPanel(s);
+}
+
+/* ── personal: avaliação ── */
+function renderPtAvaliacao(){
+  const s=getStu();
+  document.getElementById('pt-noStudPlan').style.display=s?'none':'block';
+  document.getElementById('pt-plan-inner').style.display=s?'block':'none';
+  if(!s) return;
+  document.getElementById('pt-plan-lbl').textContent=s.name.toUpperCase();
+  const p=s.plan||{};
+  document.getElementById('p-age').value=p.age||'';
+  document.getElementById('p-height').value=p.height||'';
+  document.getElementById('p-weight').value=p.weight||'';
+  document.getElementById('p-fat').value=p.fat||'';
+  document.getElementById('p-strategy').value=p.strategy||'';
+  document.getElementById('p-obs').value=p.obs||'';
+  document.querySelectorAll('.goal-b').forEach(b=>b.classList.remove('on'));
+  if(p.goal){const g=document.getElementById('g-'+p.goal);if(g)g.classList.add('on');}
+  document.querySelectorAll('.freq-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===p.freq));
+  const m=s.measures||{};
+  ['chest','waist','hip','arm','thigh','calf'].forEach(k=>{document.getElementById('m-'+k).value=m[k]||'';});
+  document.getElementById('evo-date').value=new Date().toISOString().split('T')[0];
+  renderPtWeightLog();renderPtPhotos();
+}
+function savePlan(){
+  const s=getStu(); if(!s) return;
+  s.plan={...s.plan,age:document.getElementById('p-age').value,height:document.getElementById('p-height').value,weight:document.getElementById('p-weight').value,fat:document.getElementById('p-fat').value,strategy:document.getElementById('p-strategy').value,obs:document.getElementById('p-obs').value};
+  persist();
+}
+function setGoal(g){
+  const s=getStu(); if(!s) return;
+  s.plan={...(s.plan||{}),goal:g};
+  document.querySelectorAll('.goal-b').forEach(b=>b.classList.remove('on'));
+  document.getElementById('g-'+g).classList.add('on');persist();
+}
+function setFreq(n){
+  const s=getStu(); if(!s) return;
+  s.plan={...(s.plan||{}),freq:n};
+  document.querySelectorAll('.freq-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===n));persist();
+}
+function saveMeas(){
+  const s=getStu(); if(!s) return;
+  s.measures={chest:document.getElementById('m-chest').value,waist:document.getElementById('m-waist').value,hip:document.getElementById('m-hip').value,arm:document.getElementById('m-arm').value,thigh:document.getElementById('m-thigh').value,calf:document.getElementById('m-calf').value};
+  persist();
+}
+function addEvo(){
+  const s=getStu(); if(!s) return;
+  const date=document.getElementById('evo-date').value;
+  const weight=document.getElementById('evo-kg').value;
+  if(!date||!weight) return;
+  if(!s.weightLog) s.weightLog=[];
+  s.weightLog.push({date,weight});
+  s.weightLog.sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('evo-kg').value='';
+  persist();renderPtWeightLog();
+}
+function delEvo(i){
+  const s=getStu(); if(!s) return;
+  s.weightLog.splice(i,1);persist();renderPtWeightLog();
+}
+function renderPtWeightLog(){
+  const s=getStu(); if(!s) return;
+  document.getElementById('pt-weightLog').innerHTML=renderWeightLogHTML(s.weightLog||[]);
+}
+function handlePhotos(evt){
+  const s=getStu(); if(!s) return;
+  if(!s.photos) s.photos=[];
+  Array.from(evt.target.files).forEach(f=>{
+    const r=new FileReader(); r.onload=e=>{s.photos.push(e.target.result);persist();renderPtPhotos();}; r.readAsDataURL(f);
+  });
+  evt.target.value='';
+}
+function delPhoto(i){const s=getStu();if(!s)return;s.photos.splice(i,1);persist();renderPtPhotos();}
+function renderPtPhotos(){
+  const s=getStu(); if(!s) return;
+  document.getElementById('pt-photoGrid').innerHTML=renderPhotoGridHTML(s.photos||[],'delPhoto');
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+load();
+showScreen('welcome');
+</script>
+</body>
+</html>
