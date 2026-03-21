@@ -369,11 +369,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
   <div class="pane on" id="ppane-alunos">
     <div class="pin-settings-bar">
       <button class="pin-settings-btn" onclick="openChangePIN()">🔑 Alterar PIN</button>
+      <button class="pin-settings-btn" onclick="reloadStudents()" style="margin-left:6px;">🔄 Sincronizar</button>
     </div>
     <div class="row-top">
       <span class="sec-lbl">Alunos cadastrados</span>
       <button class="btn btn-hi btn-sm" onclick="openStudModal()">+ Aluno</button>
     </div>
+    <div id="dbStatus" style="font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;margin-bottom:10px;display:none;"></div>
     <div id="studentList"></div>
   </div>
 
@@ -703,6 +705,7 @@ async function load(){
     if(errEl) errEl.style.display='block';
   }
   hideLoading();
+  console.log('DB loaded:', DB.students.length, 'students:', DB.students.map(s=>s.name));
 }
 
 async function persistStudent(s){
@@ -1164,11 +1167,23 @@ function ptTab(name){
     document.getElementById('ppane-'+t).classList.toggle('on',t===name);
     document.getElementById('ptab-'+t).classList.toggle('on',t===name);
   });
+  if(name==='alunos')    renderStudents();
   if(name==='treinos')   renderPtTreinos();
   if(name==='avaliacao') renderPtAvaliacao();
 }
 
 /* ── personal: alunos ── */
+async function reloadStudents(){
+  const statusEl = document.getElementById('dbStatus');
+  if(statusEl){ statusEl.style.display='block'; statusEl.textContent='Sincronizando...'; }
+  await load();
+  renderStudents();
+  if(statusEl){ 
+    statusEl.textContent = `${DB.students.length} aluno(s) carregado(s) do Supabase`;
+    setTimeout(()=>{ statusEl.style.display='none'; }, 3000);
+  }
+}
+
 function renderStudents(){
   const el=document.getElementById('studentList');
   if(!DB.students.length){
