@@ -573,11 +573,42 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 
 <script>
 /* ═══════════════════════════════════════════════════════
-   DATA MODEL
-   Student { id, name, presences, workoutType, activeWorkout,
+   SUPABASE CONFIG
+═══════════════════════════════════════════════════════ */
+const SUPA_URL = 'https://cpzopjxlqlbpdnbtomsx.supabase.co';
+const SUPA_KEY = 'sb_publishable_zSAvrc7ffCG5EdkjMf8LLg_K6KlBPJd';
+
+async function supa(method, table, body=null, query=''){
+  const url = `${SUPA_URL}/rest/v1/${table}${query}`;
+  const opts = {
+    method,
+    headers:{
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'return=representation' : 'return=representation'
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if(!res.ok){ const err=await res.text(); console.error('Supabase error:',err); return null; }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// GET
+const supaGet  = (table,query='')      => supa('GET',table,null,query);
+// INSERT
+const supaPost = (table,body)          => supa('POST',table,body);
+// UPDATE
+const supaPatch = (table,query,body)   => supa('PATCH',table,body,query);
+// DELETE
+const supaDel  = (table,query)         => supa('DELETE',table,null,query);
+
+/* ═══════════════════════════════════════════════════════
+   DATA MODEL (in-memory, synced with Supabase)
+   Student { id, nome, presencas, workoutType, activeWorkout,
              exercises:{}, plan:{}, measures:{}, weightLog:[], photos:[] }
-   Exercise { id, name, _open, series:[] }
-   Serie    { id, type, reps, obs, completed, weight }
 ═══════════════════════════════════════════════════════ */
 const TW={AB:['A','B'],ABC:['A','B','C'],ABCD:['A','B','C','D']};
 const MODS=[{k:'alongamento',l:'Alongamento / Mobilidade'},{k:'musculacao',l:'Musculação'},{k:'cardio',l:'Cárdio'}];
@@ -586,21 +617,139 @@ const BADGE_LBL={aquecimento:'AQUEC',normal:'NORMAL',falha:'FALHA',drop:'DROP'};
 const DEFAULT_PIN='1234';
 
 let DB={students:[]};
-let activeSid=null;   // personal: selected student id
-let currentStu=null;  // student: logged-in student object (reference)
-let mode=null;        // 'student' | 'personal'
+let activeSid=null;
+let currentStu=null;
+let mode=null;
 let editSid=null;
 let exCtx=null;
 let srCtx=null;
+let _saving=false;
 
-/* ── persist ── */
-function load(){try{const r=localStorage.getItem('bloc_v5');if(r)DB=JSON.parse(r);}catch(e){}}
-function persist(){try{localStorage.setItem('bloc_v5',JSON.stringify(DB));toast('✓ Salvo');}catch(e){}}
-function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1300);}
+/* ── utils ── */
+function toast(m,err=false){const e=document.getElementById('toast');e.textContent=m;e.style.background=err?'#c4003c':'';e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>{e.classList.remove('on');e.style.background='';},1600);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function getStu(id){return DB.students.find(s=>s.id===(id||activeSid));}
-function getPin(){return localStorage.getItem('bloc_pin')||DEFAULT_PIN;}
+function getPin(){return localStorage.getItem('lf_pin')||DEFAULT_PIN;}
+
+/* ── loading overlay ── */
+function showLoading(msg='Carregando...'){
+  let el=document.getElementById('loadingOverlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='loadingOverlay';
+    el.style.cssText='position:fixed;inset:0;background:rgba(240,247,255,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;backdrop-filter:blur(4px);';
+    el.innerHTML=`<div style="width:36px;height:36px;border:3px solid #cce3f5;border-top-color:#00c2d4;border-radius:50%;animation:spin 0.7s linear infinite;"></div><div style="font-family:var(--fm);font-size:11px;letter-spacing:2px;color:#3a5272;">${msg}</div>`;
+    if(!document.getElementById('spinStyle')){const s=document.createElement('style');s.id='spinStyle';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}
+    document.body.appendChild(el);
+  } else {
+    el.querySelector('div:last-child').textContent=msg;
+    el.style.display='flex';
+  }
+}
+function hideLoading(){const el=document.getElementById('loadingOverlay');if(el)el.style.display='none';}
+
+/* ══════════════════════════════════════
+   SUPABASE LOAD & PERSIST
+══════════════════════════════════════ */
+async function load(){
+  showLoading('Carregando dados...');
+  try {
+    // Load all students
+    const alunos = await supaGet('alunos','?order=created_at.asc') || [];
+
+    // Load treinos, avaliacoes, fotos in parallel
+    const [treinos, avaliacoes, fotos] = await Promise.all([
+      supaGet('treinos','?order=created_at.asc'),
+      supaGet('avaliacoes','?order=created_at.asc'),
+      supaGet('fotos','?order=created_at.asc')
+    ]);
+
+    DB.students = alunos.map(a => {
+      const t = (treinos||[]).find(t=>t.aluno_id===a.id) || {};
+      const av = (avaliacoes||[]).find(av=>av.aluno_id===a.id) || {};
+      const fts = (fotos||[]).filter(f=>f.aluno_id===a.id).map(f=>f.data);
+
+      return {
+        id:            a.id,
+        name:          a.nome,
+        presences:     a.presencas||0,
+        workoutType:   t.workout_type||null,
+        activeWorkout: t.active_workout||'A',
+        exercises:     t.exercises||{},
+        plan:          av.plan||{},
+        measures:      av.measures||{},
+        weightLog:     av.weight_log||[],
+        photos:        fts,
+        // store db row ids for updates
+        _treinoId:     t.id||null,
+        _avaliacaoId:  av.id||null,
+        _fotoIds:      (fotos||[]).filter(f=>f.aluno_id===a.id).map(f=>({id:f.id,data:f.data}))
+      };
+    });
+  } catch(e){
+    console.error('Load error:',e);
+    toast('Erro ao carregar dados',true);
+  }
+  hideLoading();
+}
+
+async function persistStudent(s){
+  if(!s) return;
+  try {
+    // 1. Upsert aluno
+    await supaPatch('alunos',`?id=eq.${s.id}`,{
+      nome: s.name,
+      presencas: s.presences||0
+    });
+
+    // 2. Upsert treino
+    const treinoData = {
+      aluno_id: s.id,
+      workout_type: s.workoutType,
+      active_workout: s.activeWorkout,
+      exercises: s.exercises
+    };
+    if(s._treinoId){
+      await supaPatch('treinos',`?id=eq.${s._treinoId}`,treinoData);
+    } else {
+      const res = await supaPost('treinos',treinoData);
+      if(res&&res[0]) s._treinoId=res[0].id;
+    }
+
+    // 3. Upsert avaliacao
+    const avData = {
+      aluno_id: s.id,
+      plan: s.plan||{},
+      measures: s.measures||{},
+      weight_log: s.weightLog||[]
+    };
+    if(s._avaliacaoId){
+      await supaPatch('avaliacoes',`?id=eq.${s._avaliacaoId}`,avData);
+    } else {
+      const res = await supaPost('avaliacoes',avData);
+      if(res&&res[0]) s._avaliacaoId=res[0].id;
+    }
+
+    toast('✓ Salvo');
+  } catch(e){
+    console.error('Persist error:',e);
+    toast('Erro ao salvar',true);
+  }
+}
+
+async function persist(s){
+  s = s || getStu();
+  if(!s) return;
+  await persistStudent(s);
+}
+
+async function persistPresences(s){
+  if(!s) return;
+  try {
+    await supaPatch('alunos',`?id=eq.${s.id}`,{ presencas: s.presences||0 });
+  } catch(e){ console.error(e); }
+}
 
 /* ── modals ── */
 function openModal(id){document.getElementById(id).classList.add('on');}
@@ -772,18 +921,19 @@ function stuToggleEx(key,exIdx){
   renderStuWorkPanel(currentStu);
 }
 
-function stuToggleSr(sid_,w,mod,exIdx,si){
+async function stuToggleSr(sid_,w,mod,exIdx,si){
   const s=getStu(sid_); if(!s) return;
   const key=`${w}-${mod}`;
   const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
   sr.completed=!sr.completed;
   s.presences=Math.max(0,(s.presences||0)+(sr.completed?1:-1));
   (s.exercises[key][exIdx])._open=true;
-  persist();
+  await persist(s);
+  await persistPresences(s);
   renderStuWorkPanel(s);
 }
 
-// stuSetW removed — students no longer edit weight
+// stuSetW removed — students no longer edit weight/interval
 
 /* ── student: avaliação ── */
 function renderStudentAvaliacao(){
@@ -857,7 +1007,7 @@ function renderPhotoGridHTML(photos,delFn){
   `).join('');
 }
 
-function stuAddEvo(){
+async function stuAddEvo(){
   const s=currentStu; if(!s) return;
   const date=document.getElementById('stu-evo-date').value;
   const weight=document.getElementById('stu-evo-kg').value;
@@ -866,17 +1016,18 @@ function stuAddEvo(){
   s.weightLog.push({date,weight});
   s.weightLog.sort((a,b)=>a.date.localeCompare(b.date));
   document.getElementById('stu-evo-kg').value='';
-  persist();
+  await persist(s);
   document.getElementById('stu-weightLog').innerHTML=renderWeightLogHTML(s.weightLog);
 }
 
-function stuDelEvo(i){
+async function stuDelEvo(i){
   const s=currentStu; if(!s) return;
-  s.weightLog.splice(i,1); persist();
+  s.weightLog.splice(i,1);
+  await persist(s);
   document.getElementById('stu-weightLog').innerHTML=renderWeightLogHTML(s.weightLog);
 }
 
-function stuSaveMeas(){
+async function stuSaveMeas(){
   const s=currentStu; if(!s) return;
   s.measures={
     chest:document.getElementById('sm-chest').value,
@@ -886,24 +1037,34 @@ function stuSaveMeas(){
     thigh:document.getElementById('sm-thigh').value,
     calf:document.getElementById('sm-calf').value
   };
-  persist();
+  await persist(s);
 }
 
 function stuHandlePhotos(evt){
   const s=currentStu; if(!s) return;
   if(!s.photos) s.photos=[];
   Array.from(evt.target.files).forEach(f=>{
-    const r=new FileReader(); r.onload=e=>{
-      s.photos.push(e.target.result); persist();
+    const r=new FileReader();
+    r.onload=async e=>{
+      const data=e.target.result;
+      s.photos.push(data);
+      const res=await supaPost('fotos',{aluno_id:s.id, data});
+      if(res&&res[0]) s._fotoIds=[...(s._fotoIds||[]),{id:res[0].id,data}];
       document.getElementById('stu-photoGrid').innerHTML=renderPhotoGridHTML(s.photos,'stuDelPhoto');
-    }; r.readAsDataURL(f);
+      toast('✓ Foto salva');
+    };
+    r.readAsDataURL(f);
   });
   evt.target.value='';
 }
 
-function stuDelPhoto(i){
+async function stuDelPhoto(i){
   const s=currentStu; if(!s) return;
-  s.photos.splice(i,1); persist();
+  s.photos.splice(i,1);
+  if(s._fotoIds&&s._fotoIds[i]){
+    await supaDel('fotos',`?id=eq.${s._fotoIds[i].id}`);
+    s._fotoIds.splice(i,1);
+  }
   document.getElementById('stu-photoGrid').innerHTML=renderPhotoGridHTML(s.photos,'stuDelPhoto');
 }
 
@@ -1032,18 +1193,35 @@ function openStudModal(id){
   openModal('mStud');
   setTimeout(()=>document.getElementById('s-name').focus(),150);
 }
-function saveStud(){
+async function saveStud(){
   const name=document.getElementById('s-name').value.trim();
   if(!name){document.getElementById('s-name').focus();return;}
-  if(editSid){getStu(editSid).name=name;}
-  else{DB.students.push({id:uid(),name,presences:0,workoutType:null,activeWorkout:'A',exercises:{},plan:{},measures:{},weightLog:[],photos:[]});}
-  closeModal('mStud');persist();renderStudents();
+  closeModal('mStud');
+  showLoading('Salvando aluno...');
+  if(editSid){
+    getStu(editSid).name=name;
+    await supaPatch('alunos',`?id=eq.${editSid}`,{nome:name});
+  } else {
+    const res = await supaPost('alunos',{nome:name, presencas:0});
+    if(res&&res[0]){
+      const a=res[0];
+      const newStu={id:a.id,name:a.nome,presences:0,workoutType:null,activeWorkout:'A',exercises:{},plan:{},measures:{},weightLog:[],photos:[],_treinoId:null,_avaliacaoId:null,_fotoIds:[]};
+      DB.students.push(newStu);
+    }
+  }
+  hideLoading();
+  toast('✓ Aluno salvo');
+  renderStudents();
 }
-function delStud(id){
+async function delStud(id){
   if(!confirm('Excluir aluno e todos os dados?')) return;
+  showLoading('Excluindo...');
+  await supaDel('alunos',`?id=eq.${id}`);
   DB.students=DB.students.filter(s=>s.id!==id);
   if(activeSid===id) activeSid=null;
-  persist();renderStudents();
+  hideLoading();
+  toast('✓ Aluno excluído');
+  renderStudents();
 }
 function ptSelectStudent(id){
   activeSid=id;
@@ -1067,12 +1245,13 @@ function renderPtTreinos(){
     renderPtLetterRow(s);renderPtWorkPanel(s);
   }
 }
-function setType(type){
+async function setType(type){
   const s=getStu(); if(!s) return;
   s.workoutType=type;
   const ws=TW[type];
   if(!ws.includes(s.activeWorkout)) s.activeWorkout=ws[0];
-  persist();renderStudents();renderPtTreinos();
+  await persist(s);
+  renderStudents();renderPtTreinos();
 }
 function renderPtLetterRow(s){
   const ws=TW[s.workoutType];
@@ -1158,20 +1337,23 @@ function ptToggleEx(sid_,key,exIdx){
   const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
   ex._open=!ex._open; renderPtWorkPanel(s);
 }
-function ptToggleSr(sid_,w,mod,exIdx,si){
+async function ptToggleSr(sid_,w,mod,exIdx,si){
   const s=getStu(sid_); if(!s) return;
   const key=`${w}-${mod}`;
   const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
   sr.completed=!sr.completed;
   s.presences=Math.max(0,(s.presences||0)+(sr.completed?1:-1));
   (s.exercises[key][exIdx])._open=true;
-  persist();renderStudents();renderPtWorkPanel(s);
+  await persist(s);
+  await persistPresences(s);
+  renderStudents();renderPtWorkPanel(s);
 }
-function ptSetInterval(sid_,w,mod,exIdx,si,val){
+async function ptSetInterval(sid_,w,mod,exIdx,si,val){
   const s=getStu(sid_); if(!s) return;
   const key=`${w}-${mod}`;
   const sr=((s.exercises[key]||[])[exIdx]?.series||[])[si]; if(!sr) return;
-  sr.interval=val; persist();
+  sr.interval=val;
+  await persist(s);
 }
 
 /* ── exercise/serie CRUD ── */
@@ -1181,7 +1363,7 @@ function openExModal(sid_,w,mod,exIdx){
   document.getElementById('ex-name').value=exIdx!==null?(getStu(sid_).exercises[`${w}-${mod}`]||[])[exIdx]?.name||'':'';
   openModal('mEx');setTimeout(()=>document.getElementById('ex-name').focus(),150);
 }
-function saveEx(){
+async function saveEx(){
   if(!exCtx) return;
   const {sid:sid_,w,mod,exIdx}=exCtx;
   const name=document.getElementById('ex-name').value.trim();
@@ -1191,15 +1373,19 @@ function saveEx(){
   if(!s.exercises[key]) s.exercises[key]=[];
   if(exIdx!==null){s.exercises[key][exIdx].name=name;}
   else{s.exercises[key].push({id:uid(),name,series:[],_open:true});}
-  closeModal('mEx');persist();renderPtWorkPanel(s);
+  closeModal('mEx');
+  await persist(s);
+  renderPtWorkPanel(s);
 }
-function delEx(sid_,w,mod,exIdx){
+async function delEx(sid_,w,mod,exIdx){
   const s=getStu(sid_); if(!s) return;
   const key=`${w}-${mod}`;
   if(!confirm('Excluir exercício?')) return;
   ((s.exercises[key]||[])[exIdx]?.series||[]).forEach(sr=>{if(sr.completed)s.presences=Math.max(0,(s.presences||0)-1);});
   s.exercises[key].splice(exIdx,1);
-  persist();renderStudents();renderPtWorkPanel(s);
+  await persist(s);
+  await persistPresences(s);
+  renderStudents();renderPtWorkPanel(s);
 }
 function openSrModal(sid_,w,mod,exIdx,srIdx){
   srCtx={sid:sid_,w,mod,exIdx,srIdx};
@@ -1218,7 +1404,7 @@ function openSrModal(sid_,w,mod,exIdx,srIdx){
   }
   openModal('mSr');setTimeout(()=>document.getElementById('sr-reps').focus(),150);
 }
-function saveSr(){
+async function saveSr(){
   if(!srCtx) return;
   const {sid:sid_,w,mod,exIdx,srIdx}=srCtx;
   const s=getStu(sid_); if(!s) return;
@@ -1228,16 +1414,20 @@ function saveSr(){
   if(srIdx!==null){const orig=ex.series[srIdx];sr.completed=orig.completed;sr.interval=orig.interval||'';sr.id=orig.id;ex.series[srIdx]=sr;}
   else{ex.series.push(sr);}
   ex._open=true;
-  closeModal('mSr');persist();renderPtWorkPanel(s);
+  closeModal('mSr');
+  await persist(s);
+  renderPtWorkPanel(s);
 }
-function delSr(sid_,w,mod,exIdx,si){
+async function delSr(sid_,w,mod,exIdx,si){
   const s=getStu(sid_); if(!s) return;
   const key=`${w}-${mod}`;
   const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
   if(!confirm('Excluir série?')) return;
   if(ex.series[si]?.completed) s.presences=Math.max(0,(s.presences||0)-1);
   ex.series.splice(si,1);ex._open=true;
-  persist();renderStudents();renderPtWorkPanel(s);
+  await persist(s);
+  await persistPresences(s);
+  renderStudents();renderPtWorkPanel(s);
 }
 
 /* ── personal: avaliação ── */
@@ -1262,28 +1452,30 @@ function renderPtAvaliacao(){
   document.getElementById('evo-date').value=new Date().toISOString().split('T')[0];
   renderPtWeightLog();renderPtPhotos();
 }
-function savePlan(){
+async function savePlan(){
   const s=getStu(); if(!s) return;
   s.plan={...s.plan,age:document.getElementById('p-age').value,height:document.getElementById('p-height').value,weight:document.getElementById('p-weight').value,fat:document.getElementById('p-fat').value,strategy:document.getElementById('p-strategy').value,obs:document.getElementById('p-obs').value};
-  persist();
+  await persist(s);
 }
-function setGoal(g){
+async function setGoal(g){
   const s=getStu(); if(!s) return;
   s.plan={...(s.plan||{}),goal:g};
   document.querySelectorAll('.goal-b').forEach(b=>b.classList.remove('on'));
-  document.getElementById('g-'+g).classList.add('on');persist();
+  document.getElementById('g-'+g).classList.add('on');
+  await persist(s);
 }
-function setFreq(n){
+async function setFreq(n){
   const s=getStu(); if(!s) return;
   s.plan={...(s.plan||{}),freq:n};
-  document.querySelectorAll('.freq-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===n));persist();
+  document.querySelectorAll('.freq-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===n));
+  await persist(s);
 }
-function saveMeas(){
+async function saveMeas(){
   const s=getStu(); if(!s) return;
   s.measures={chest:document.getElementById('m-chest').value,waist:document.getElementById('m-waist').value,hip:document.getElementById('m-hip').value,arm:document.getElementById('m-arm').value,thigh:document.getElementById('m-thigh').value,calf:document.getElementById('m-calf').value};
-  persist();
+  await persist(s);
 }
-function addEvo(){
+async function addEvo(){
   const s=getStu(); if(!s) return;
   const date=document.getElementById('evo-date').value;
   const weight=document.getElementById('evo-kg').value;
@@ -1292,11 +1484,14 @@ function addEvo(){
   s.weightLog.push({date,weight});
   s.weightLog.sort((a,b)=>a.date.localeCompare(b.date));
   document.getElementById('evo-kg').value='';
-  persist();renderPtWeightLog();
+  await persist(s);
+  renderPtWeightLog();
 }
-function delEvo(i){
+async function delEvo(i){
   const s=getStu(); if(!s) return;
-  s.weightLog.splice(i,1);persist();renderPtWeightLog();
+  s.weightLog.splice(i,1);
+  await persist(s);
+  renderPtWeightLog();
 }
 function renderPtWeightLog(){
   const s=getStu(); if(!s) return;
@@ -1306,11 +1501,31 @@ function handlePhotos(evt){
   const s=getStu(); if(!s) return;
   if(!s.photos) s.photos=[];
   Array.from(evt.target.files).forEach(f=>{
-    const r=new FileReader(); r.onload=e=>{s.photos.push(e.target.result);persist();renderPtPhotos();}; r.readAsDataURL(f);
+    const r=new FileReader();
+    r.onload=async e=>{
+      const data=e.target.result;
+      s.photos.push(data);
+      // save to fotos table
+      const res=await supaPost('fotos',{aluno_id:s.id, data});
+      if(res&&res[0]) s._fotoIds=[...(s._fotoIds||[]),{id:res[0].id,data}];
+      renderPtPhotos();
+      toast('✓ Foto salva');
+    };
+    r.readAsDataURL(f);
   });
   evt.target.value='';
 }
-function delPhoto(i){const s=getStu();if(!s)return;s.photos.splice(i,1);persist();renderPtPhotos();}
+async function delPhoto(i){
+  const s=getStu();if(!s)return;
+  s.photos.splice(i,1);
+  // delete from fotos table using stored id
+  if(s._fotoIds&&s._fotoIds[i]){
+    await supaDel('fotos',`?id=eq.${s._fotoIds[i].id}`);
+    s._fotoIds.splice(i,1);
+  }
+  renderPtPhotos();
+  toast('✓ Foto removida');
+}
 function renderPtPhotos(){
   const s=getStu(); if(!s) return;
   document.getElementById('pt-photoGrid').innerHTML=renderPhotoGridHTML(s.photos||[],'delPhoto');
@@ -1319,8 +1534,10 @@ function renderPtPhotos(){
 /* ═══════════════════════════════════════
    INIT
 ═══════════════════════════════════════ */
-load();
-showScreen('welcome');
+(async()=>{
+  await load();
+  showScreen('welcome');
+})();
 </script>
 </body>
 </html>
