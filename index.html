@@ -711,24 +711,37 @@ async function load(){
 async function persistStudent(s){
   if(!s) return;
   try {
-    // 1. Upsert aluno
+    // 1. Update aluno
     await supaPatch('alunos',`?id=eq.${s.id}`,{
       nome: s.name,
       presencas: s.presences||0
     });
 
-    // 2. Upsert treino
+    // 2. Upsert treino — always use aluno_id to find/create
+    // Strip UI-only _open flags before saving
+    const cleanExercises = {};
+    Object.keys(s.exercises||{}).forEach(key => {
+      cleanExercises[key] = (s.exercises[key]||[]).map(ex => {
+        const {_open, ...rest} = ex;
+        return rest;
+      });
+    });
+
     const treinoData = {
       aluno_id: s.id,
       workout_type: s.workoutType,
       active_workout: s.activeWorkout,
-      exercises: s.exercises
+      exercises: cleanExercises
     };
-    if(s._treinoId){
-      await supaPatch('treinos',`?id=eq.${s._treinoId}`,treinoData);
+
+    // Check if treino exists for this student
+    const existing = await supaGet('treinos', `?aluno_id=eq.${s.id}`);
+    if(existing && existing.length > 0){
+      s._treinoId = existing[0].id;
+      await supaPatch('treinos',`?aluno_id=eq.${s.id}`,treinoData);
     } else {
-      const res = await supaPost('treinos',treinoData);
-      if(res&&res[0]) s._treinoId=res[0].id;
+      const res = await supaPost('treinos', treinoData);
+      if(res&&res[0]) s._treinoId = res[0].id;
     }
 
     // 3. Upsert avaliacao
@@ -738,11 +751,13 @@ async function persistStudent(s){
       measures: s.measures||{},
       weight_log: s.weightLog||[]
     };
-    if(s._avaliacaoId){
-      await supaPatch('avaliacoes',`?id=eq.${s._avaliacaoId}`,avData);
+    const existingAv = await supaGet('avaliacoes', `?aluno_id=eq.${s.id}`);
+    if(existingAv && existingAv.length > 0){
+      s._avaliacaoId = existingAv[0].id;
+      await supaPatch('avaliacoes',`?aluno_id=eq.${s.id}`,avData);
     } else {
-      const res = await supaPost('avaliacoes',avData);
-      if(res&&res[0]) s._avaliacaoId=res[0].id;
+      const res = await supaPost('avaliacoes', avData);
+      if(res&&res[0]) s._avaliacaoId = res[0].id;
     }
 
     toast('✓ Salvo');
