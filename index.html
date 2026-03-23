@@ -269,6 +269,39 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ─── DARK MODE ─── */
+[data-theme="dark"]{
+  --bg:#0d1117;--bg2:#161b22;--surface:#1c2128;
+  --border:#30363d;--border2:#484f58;
+  --ink:#e6edf3;--ink2:#8b949e;--ink3:#6e7681;
+  --hi:#00c2d4;--hi2:#00a8b8;--hi-dark:#00c2d4;
+  --green-bg:#0d2119;--aq-bg:#2a1800;--nm-bg:#0a1c33;--fl-bg:#2a0010;--dr-bg:#1a0a33;
+}
+[data-theme="dark"] body{background:var(--bg);}
+[data-theme="dark"] .welcome-wrap{background:linear-gradient(160deg,#0d1117 0%,#161b22 60%,#1c2128 100%);}
+[data-theme="dark"] .pin-overlay{background:linear-gradient(160deg,#0d1117 0%,#161b22 100%);}
+[data-theme="dark"] .np-btn{color:var(--ink);}
+[data-theme="dark"] .fsel option{background:var(--surface);color:var(--ink);}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{color-scheme:dark;}
+
+.btn-dark{background:none;border:1px solid var(--border2);color:var(--ink3);font-size:15px;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;padding:0;}
+.btn-dark:hover{border-color:var(--hi);color:var(--hi);}
+
+/* Badges novos */
+.bdg-cs{background:#e8f5e9;color:#2e7d32;border:1px solid rgba(46,125,50,.25);}
+.bdg-bt{background:#fce4ec;color:#880e4f;border:1px solid rgba(136,14,79,.25);}
+[data-theme="dark"] .bdg-cs{background:#0d2119;color:#66bb6a;border-color:rgba(102,187,106,.25);}
+[data-theme="dark"] .bdg-bt{background:#2a0010;color:#f48fb1;border-color:rgba(244,143,177,.25);}
+
+/* ─── INLINE SERIES EDIT ─── */
+.sr-edit{background:rgba(0,194,212,.06)!important;border-left:2px solid var(--hi)!important;grid-template-columns:20px 1fr 60px 74px 26px 26px 26px;}
+.sr-edit .fsel{font-size:10px;padding:3px 4px;height:auto;min-width:0;background:var(--bg2);border:1px solid var(--border);color:var(--ink);}
+.sr-edit .fi{font-size:10px;padding:4px 5px;height:auto;background:var(--bg2);border:1.5px solid var(--border);color:var(--ink);}
+.sr-obs-link{grid-column:1/-1;font-size:10px;color:var(--ink2);font-style:italic;line-height:1.5;padding:0 0 4px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.sr-obs-link:hover{color:var(--hi);}
+.sr-obs-add{grid-column:1/-1;font-size:10px;color:var(--ink3);font-style:italic;padding:0 0 4px;cursor:pointer;opacity:.6;}
+.sr-obs-add:hover{color:var(--hi);opacity:1;}
 </style>
 </head>
 <body>
@@ -314,6 +347,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
           <span class="user-name" id="stuName">—</span>
         </div>
         <button class="btn-logout" onclick="logoutStudent()">Sair</button>
+        <button class="btn-dark" id="darkBtnStu" onclick="toggleDark()" title="Modo noturno">🌙</button>
       </div>
     </div>
     <div class="tab-bar">
@@ -329,7 +363,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
       Seu treinador ainda não<br>configurou seu treino.
     </div>
     <div id="stu-work" style="display:none">
-      <div class="sec-lbl" id="stu-type-lbl" style="margin-bottom:12px"></div>
+      <div class="sec-lbl" id="stu-type-lbl" style="display:none;margin-bottom:12px"></div>
       <div class="letter-row" id="stu-letter-row"></div>
       <div id="stu-work-panel"></div>
     </div>
@@ -356,6 +390,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
           <span class="user-name">LF Consultoria</span>
         </div>
         <button class="btn-logout" onclick="logoutPersonal()">Sair</button>
+        <button class="btn-dark" id="darkBtnPt" onclick="toggleDark()" title="Modo noturno">🌙</button>
       </div>
     </div>
     <div class="tab-bar">
@@ -529,6 +564,25 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
   </div>
 </div>
 
+<!-- obs modal -->
+<div class="overlay" id="mObs">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Observação</div>
+    <div class="fg">
+      <div class="rt-bar">
+        <button class="rt-b" onclick="fmtObs('bold')"><b>B</b></button>
+        <button class="rt-b" onclick="fmtObs('italic')"><i>I</i></button>
+      </div>
+      <div class="rt-area" id="obs-modal-area" contenteditable="true"></div>
+    </div>
+    <div class="sh-actions">
+      <button class="btn btn-out" onclick="closeModal('mObs')">Cancelar</button>
+      <button class="btn btn-hi" onclick="saveObsModal()">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- serie modal -->
 <div class="overlay" id="mSr">
   <div class="sheet">
@@ -540,6 +594,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
         <option value="normal">Normal</option>
         <option value="falha">Falha</option>
         <option value="drop">Drop</option>
+        <option value="cluster">Cluster Set</option>
+        <option value="bit">Bit Set</option>
       </select>
     </div>
     <div class="fg"><label class="fl">Repetições</label><input class="fi" type="text" id="sr-reps" placeholder="Ex: 8–12"></div>
@@ -623,8 +679,8 @@ const supaDel  = (table,query)         => supa('DELETE',table,null,query);
 ═══════════════════════════════════════════════════════ */
 const TW={AB:['A','B'],ABC:['A','B','C'],ABCD:['A','B','C','D']};
 const MODS=[{k:'alongamento',l:'Alongamento / Mobilidade'},{k:'musculacao',l:'Musculação'},{k:'cardio',l:'Cárdio'}];
-const BADGE={aquecimento:'aq',normal:'nm',falha:'fl',drop:'dr'};
-const BADGE_LBL={aquecimento:'AQUEC',normal:'NORMAL',falha:'FALHA',drop:'DROP'};
+const BADGE={aquecimento:'aq',normal:'nm',falha:'fl',drop:'dr',cluster:'cs',bit:'bt'};
+const BADGE_LBL={aquecimento:'AQUEC',normal:'NORMAL',falha:'FALHA',drop:'DROP',cluster:'CLUSTER',bit:'BIT SET'};
 const DEFAULT_PIN='1234';
 
 let DB={students:[]};
@@ -1353,8 +1409,8 @@ function renderPtExCard(ex,s,w,mod,exIdx,key){
             </div>
             ${series.map((sr,si)=>renderPtSrRow(sr,sid_,w,mod,exIdx,si)).join('')}
           `:`<div style="padding:10px 0 4px;font-family:var(--fm);font-size:9px;color:var(--ink3);letter-spacing:1px;">Nenhuma série ainda.</div>`}
-          <div class="add-serie-bar">
-            <button class="btn-dashed" onclick="openSrModal('${sid_}','${w}','${mod}',${exIdx},null)">+ Adicionar série</button>
+          <div class="add-serie-bar" id="psr-addbar-${sid_}-${w}-${mod}-${exIdx}">
+            <button class="btn-dashed" onclick="openInlineSr('${sid_}','${w}','${mod}',${exIdx},null)">+ Adicionar série</button>
           </div>
         </div>
       </div>
@@ -1363,6 +1419,9 @@ function renderPtExCard(ex,s,w,mod,exIdx,key){
 function renderPtSrRow(sr,sid_,w,mod,exIdx,si){
   const bdg=BADGE[sr.type]||'nm';
   const lbl=BADGE_LBL[sr.type]||sr.type;
+  const obsHtml=sr.obs
+    ?`<div class="sr-obs-link" onclick="openObsForSr('${sid_}','${w}','${mod}',${exIdx},${si})">${sr.obs}</div>`
+    :`<div class="sr-obs-add" onclick="openObsForSr('${sid_}','${w}','${mod}',${exIdx},${si})">+ observação</div>`;
   return `
     <div class="sr ${sr.completed?'done':''}" id="psr-${sid_}-${w}-${mod}-${exIdx}-${si}">
       <span class="sr-n">${si+1}</span>
@@ -1372,9 +1431,9 @@ function renderPtSrRow(sr,sid_,w,mod,exIdx,si){
              onchange="ptSetInterval('${sid_}','${w}','${mod}',${exIdx},${si},this.value)"
              onclick="event.stopPropagation()" title="Intervalo de descanso">
       <div class="chk ${sr.completed?'on':''}" onclick="ptToggleSr('${sid_}','${w}','${mod}',${exIdx},${si})"></div>
-      <button class="ico" onclick="openSrModal('${sid_}','${w}','${mod}',${exIdx},${si})">✏️</button>
+      <button class="ico" onclick="openInlineSr('${sid_}','${w}','${mod}',${exIdx},${si})">✏️</button>
       <button class="ico red" onclick="delSr('${sid_}','${w}','${mod}',${exIdx},${si})">🗑</button>
-      ${sr.obs?`<div class="sr-obs">${sr.obs}</div>`:''}
+      ${obsHtml}
     </div>`;
 }
 function ptToggleEx(sid_,key,exIdx){
@@ -1621,6 +1680,142 @@ function getSavedSession(){
     showScreen('welcome');
   }
 })();
+
+/* ─── DARK MODE ─── */
+function toggleDark(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',isDark?'':'dark');
+  const icon=isDark?'🌙':'☀️';
+  document.querySelectorAll('.btn-dark').forEach(b=>b.textContent=icon);
+  localStorage.setItem('lf_dark',isDark?'':'dark');
+}
+(function initDark(){
+  if(localStorage.getItem('lf_dark')==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    const setIcon=()=>document.querySelectorAll('.btn-dark').forEach(b=>b.textContent='☀️');
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setIcon);
+    else setIcon();
+  }
+})();
+
+/* ─── INLINE SERIES EDIT ─── */
+let _inlineObs='';
+let _inlineCtx=null;
+let _obsMode=null; // 'inline' or 'existing'
+
+function _srTypeOpts(cur){
+  return [
+    ['aquecimento','Aquecimento'],['normal','Normal'],['falha','Falha'],
+    ['drop','Drop'],['cluster','Cluster Set'],['bit','Bit Set']
+  ].map(([v,l])=>`<option value="${v}"${v===cur?' selected':''} >${l}</option>`).join('');
+}
+
+function openInlineSr(sid_,w,mod,exIdx,srIdx){
+  // Cancel any pending inline edit first (re-render)
+  if(_inlineCtx){
+    const prevCtx=_inlineCtx; _inlineCtx=null; _inlineObs='';
+    const s=getStu(prevCtx.sid); if(s) renderPtWorkPanel(s);
+    return;
+  }
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  let curType='normal',curReps='',curInt='';
+  _inlineObs='';
+  if(srIdx!==null){
+    const sr=(ex.series||[])[srIdx];
+    if(sr){curType=sr.type||'normal';curReps=sr.reps||'';curInt=sr.interval||'';_inlineObs=sr.obs||'';}
+  }
+  _inlineCtx={sid:sid_,w,mod,exIdx,srIdx};
+  const n=srIdx!==null?srIdx+1:(ex.series||[]).length+1;
+  const rowHtml=`
+    <div class="sr sr-edit" id="sr-inline-row">
+      <span class="sr-n">${n}</span>
+      <select class="fsel" id="sre-type">${_srTypeOpts(curType)}</select>
+      <input class="fi" id="sre-reps" type="text" value="${esc(curReps)}" placeholder="Reps">
+      <input class="w-inp" id="sre-int" type="text" value="${esc(curInt)}" placeholder="60s">
+      <button class="ico" onclick="openObsInlineModal()" title="Observação" style="font-size:13px;">💬</button>
+      <button class="ico" onclick="saveInlineSr()" title="Salvar" style="color:var(--green);font-size:14px;font-weight:700;">✓</button>
+      <button class="ico red" onclick="cancelInlineSr()" title="Cancelar">✕</button>
+    </div>`;
+  if(srIdx!==null){
+    const existing=document.getElementById(`psr-${sid_}-${w}-${mod}-${exIdx}-${srIdx}`);
+    if(existing){existing.outerHTML=rowHtml;}
+  } else {
+    const addBar=document.getElementById(`psr-addbar-${sid_}-${w}-${mod}-${exIdx}`);
+    if(addBar){addBar.insertAdjacentHTML('beforebegin',rowHtml);}
+  }
+  setTimeout(()=>document.getElementById('sre-reps')?.focus(),80);
+}
+
+function openObsInlineModal(){
+  _obsMode='inline';
+  document.getElementById('obs-modal-area').innerHTML=_inlineObs;
+  openModal('mObs');
+  setTimeout(()=>document.getElementById('obs-modal-area').focus(),150);
+}
+
+function openObsForSr(sid_,w,mod,exIdx,si){
+  _obsMode='existing';
+  _inlineCtx={sid:sid_,w,mod,exIdx,srIdx:si,obsOnly:true};
+  const s=getStu(sid_);
+  const sr=((s?.exercises[`${w}-${mod}`]||[])[exIdx]?.series||[])[si];
+  _inlineObs=sr?.obs||'';
+  document.getElementById('obs-modal-area').innerHTML=_inlineObs;
+  openModal('mObs');
+  setTimeout(()=>document.getElementById('obs-modal-area').focus(),150);
+}
+
+async function saveObsModal(){
+  _inlineObs=document.getElementById('obs-modal-area').innerHTML.trim();
+  closeModal('mObs');
+  if(_obsMode==='existing' && _inlineCtx?.obsOnly){
+    const {sid:sid_,w,mod,exIdx,srIdx}=_inlineCtx;
+    const s=getStu(sid_); if(!s){_inlineCtx=null;return;}
+    const key=`${w}-${mod}`;
+    const sr=((s.exercises[key]||[])[exIdx]?.series||[])[srIdx];
+    if(sr){sr.obs=_inlineObs;await persist(s);renderPtWorkPanel(s);}
+    _inlineCtx=null;_inlineObs='';
+  }
+  _obsMode=null;
+}
+
+function fmtObs(cmd){document.getElementById('obs-modal-area').focus();document.execCommand(cmd);}
+
+async function saveInlineSr(){
+  if(!_inlineCtx) return;
+  const {sid:sid_,w,mod,exIdx,srIdx}=_inlineCtx;
+  const s=getStu(sid_); if(!s) return;
+  const key=`${w}-${mod}`;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  const type=document.getElementById('sre-type')?.value||'normal';
+  const reps=document.getElementById('sre-reps')?.value.trim()||'';
+  const interval=document.getElementById('sre-int')?.value.trim()||'';
+  const sr={id:uid(),type,reps,interval,obs:_inlineObs,completed:false};
+  if(srIdx!==null){
+    const orig=ex.series[srIdx];
+    sr.completed=orig.completed; sr.id=orig.id;
+    ex.series[srIdx]=sr;
+  } else {
+    ex.series.push(sr);
+  }
+  ex._open=true;
+  _inlineCtx=null; _inlineObs='';
+  await persist(s);
+  renderPtWorkPanel(s);
+}
+
+function cancelInlineSr(){
+  const ctx=_inlineCtx;
+  _inlineCtx=null; _inlineObs='';
+  const row=document.getElementById('sr-inline-row');
+  if(row){
+    const s=ctx?getStu(ctx.sid):null;
+    if(s){renderPtWorkPanel(s);}
+    else{row.remove();}
+  }
+}
+
 </script>
 </body>
 </html>
