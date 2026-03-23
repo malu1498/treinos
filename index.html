@@ -423,9 +423,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
     <div id="pt-inner" style="display:none">
       <div class="sec-lbl" id="pt-lbl" style="margin-bottom:12px"></div>
       <div class="type-row">
-        <button class="type-btn" id="ty-AB"   onclick="setType('AB')">A/B</button>
-        <button class="type-btn" id="ty-ABC"  onclick="setType('ABC')">A/B/C</button>
-        <button class="type-btn" id="ty-ABCD" onclick="setType('ABCD')">A/B/C/D</button>
+        <button class="type-btn" id="ty-AB"    onclick="setType('AB')">A/B</button>
+        <button class="type-btn" id="ty-ABC"   onclick="setType('ABC')">A/B/C</button>
+        <button class="type-btn" id="ty-ABCD"  onclick="setType('ABCD')">A/B/C/D</button>
+        <button class="type-btn" id="ty-ABCDE" onclick="setType('ABCDE')">A/B/C/D/E</button>
       </div>
       <div id="pt-noType" class="notice">Selecione o tipo de treino<br>para começar</div>
       <div id="pt-work" style="display:none">
@@ -677,7 +678,7 @@ const supaDel  = (table,query)         => supa('DELETE',table,null,query);
    Student { id, nome, presencas, workoutType, activeWorkout,
              exercises:{}, plan:{}, measures:{}, weightLog:[], photos:[] }
 ═══════════════════════════════════════════════════════ */
-const TW={AB:['A','B'],ABC:['A','B','C'],ABCD:['A','B','C','D']};
+const TW={AB:['A','B'],ABC:['A','B','C'],ABCD:['A','B','C','D'],ABCDE:['A','B','C','D','E']};
 const MODS=[{k:'alongamento',l:'Alongamento / Mobilidade'},{k:'musculacao',l:'Musculação'},{k:'cardio',l:'Cárdio'}];
 const BADGE={aquecimento:'aq',normal:'nm',falha:'fl',drop:'dr',cluster:'cs',bit:'bt'};
 const BADGE_LBL={aquecimento:'AQUEC',normal:'NORMAL',falha:'FALHA',drop:'DROP',cluster:'CLUSTER',bit:'BIT SET'};
@@ -1336,7 +1337,7 @@ function renderPtTreinos(){
   document.getElementById('pt-inner').style.display=s?'block':'none';
   if(!s) return;
   document.getElementById('pt-lbl').textContent=s.name.toUpperCase();
-  ['AB','ABC','ABCD'].forEach(t=>document.getElementById('ty-'+t).classList.toggle('on',s.workoutType===t));
+  ['AB','ABC','ABCD','ABCDE'].forEach(t=>document.getElementById('ty-'+t).classList.toggle('on',s.workoutType===t));
   if(!s.workoutType){
     document.getElementById('pt-noType').style.display='block';
     document.getElementById('pt-work').style.display='none';
