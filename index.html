@@ -143,6 +143,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .letter-row{display:flex;gap:6px;margin-bottom:18px;}
 .letter-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--ink2);font-family:var(--fd);font-weight:700;font-size:17px;padding:8px 18px;border-radius:var(--r);cursor:pointer;transition:all .15s;box-shadow:var(--sh);}
 .letter-btn.on{background:var(--hi-dark);border-color:var(--hi-dark);color:var(--hi);box-shadow:0 4px 12px rgba(0,194,212,.15);}
+.letter-btn-add{background:none;border:1.5px dashed var(--border2);color:var(--ink3);font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:.5px;padding:6px 9px;border-radius:var(--r);cursor:pointer;transition:all .15s;box-shadow:none;}
+.letter-btn-add:hover{border-color:var(--hi);color:var(--hi);background:rgba(0,194,212,.05);}
+.letter-btn-wrap{display:inline-flex;align-items:center;gap:2px;}
+.letter-btn-del{background:none;border:none;color:var(--ink3);font-size:11px;cursor:pointer;padding:2px 4px;border-radius:3px;transition:all .12s;line-height:1;}
+.letter-btn-del:hover{color:var(--fl);background:var(--fl-bg);}
 
 /* ─── MODALITY ─── */
 .mod{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:var(--sh);}
@@ -167,8 +172,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 .series-wrap{padding:0 14px;}
 .sr-header{display:grid;grid-template-columns:20px 1fr 60px 74px 26px 26px 26px;gap:6px;padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:5px 5px 0 0;}
 /* student view hides edit/del cols */
-.sr-header.student-view{grid-template-columns:20px 1fr 60px 26px;}
-.sr.student-view{grid-template-columns:20px 1fr 60px 26px;}
+.sr-header.student-view{grid-template-columns:20px 1fr 60px 68px 26px;}
+.sr.student-view{grid-template-columns:20px 1fr 60px 68px 26px;}
 .sr-col{font-family:var(--fm);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;}
 .sr{display:grid;grid-template-columns:20px 1fr 60px 74px 26px 26px 26px;gap:6px;align-items:center;padding:8px 12px;border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);transition:background .12s;}
 .sr.done{background:var(--green-bg);}
@@ -269,6 +274,27 @@ body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;
 
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ─── VARIAÇÕES DE TREINO ─── */
+async function addVariant(sid_,v){
+  const s=getStu(sid_); if(!s) return;
+  if(!s.extraLetters) s.extraLetters=[];
+  if(!s.extraLetters.includes(v)) s.extraLetters.push(v);
+  s.activeWorkout=v;
+  await persist(s);
+  renderPtLetterRow(s);
+  renderPtWorkPanel(s);
+}
+async function removeVariant(sid_,v){
+  const s=getStu(sid_); if(!s) return;
+  if(!confirm('Remover Treino '+v+'? Os exercícios desse treino serão apagados.')) return;
+  s.extraLetters=(s.extraLetters||[]).filter(x=>x!==v);
+  Object.keys(s.exercises||{}).forEach(k=>{if(k.startsWith(v+'-')) delete s.exercises[k];});
+  if(s.activeWorkout===v) s.activeWorkout=(TW[s.workoutType]||['A'])[0];
+  await persist(s);
+  renderPtLetterRow(s);
+  renderPtWorkPanel(s);
+}
 
 /* ─── DARK MODE ─── */
 [data-theme="dark"]{
@@ -744,6 +770,7 @@ async function load(){
         presences:     a.presencas||0,
         workoutType:   t.workout_type||null,
         activeWorkout: t.active_workout||'A',
+        extraLetters:  t.extra_letters||[],
         exercises:     t.exercises||{},
         plan:          av.plan||{},
         measures:      av.measures||{},
@@ -788,7 +815,8 @@ async function persistStudent(s){
       aluno_id: s.id,
       workout_type: s.workoutType,
       active_workout: s.activeWorkout,
-      exercises: cleanExercises
+      exercises: cleanExercises,
+      extra_letters: s.extraLetters||[]
     };
 
     // Check if treino exists for this student
@@ -932,8 +960,14 @@ function renderStudentTreinos(){
 }
 
 function renderStuLetterRow(s){
-  const ws=TW[s.workoutType];
-  document.getElementById('stu-letter-row').innerHTML=ws.map(w=>
+  const base=TW[s.workoutType]||[];
+  const extras=s.extraLetters||[];
+  // Variação extra só aparece pro aluno se tiver pelo menos 1 exercício preenchido
+  const visibleExtras=extras.filter(v=>
+    Object.keys(s.exercises||{}).some(k=>k.startsWith(v+'-')&&(s.exercises[k]||[]).length>0)
+  );
+  const all=[...base,...visibleExtras].sort((a,b)=>a.localeCompare(b));
+  document.getElementById('stu-letter-row').innerHTML=all.map(w=>
     `<button class="letter-btn ${w===s.activeWorkout?'on':''}" onclick="stuSwitchW('${w}')">Treino ${w}</button>`
   ).join('');
 }
@@ -979,6 +1013,7 @@ function renderStuExCard(ex,s,w,mod,exIdx,key){
             <div class="sr-header student-view">
               <div class="sr-col">#</div><div class="sr-col">Tipo</div>
               <div class="sr-col">Reps</div>
+              <div class="sr-col">Intervalo</div>
               <div class="sr-col">✓</div>
             </div>
             ${series.map((sr,si)=>renderStuSrRow(sr,s.id,w,mod,exIdx,si)).join('')}
@@ -996,7 +1031,7 @@ function renderStuSrRow(sr,sid_,w,mod,exIdx,si){
       <span class="sr-n">${si+1}</span>
       <span class="bdg bdg-${bdg}">${lbl}</span>
       <span class="sr-reps">${esc(sr.reps)||'—'}</span>
-
+      <span class="sr-reps" style="color:var(--ink3);">${esc(sr.interval)||'—'}</span>
       <div class="chk ${sr.completed?'on':''}" onclick="stuToggleSr('${sid_}','${w}','${mod}',${exIdx},${si})"></div>
       ${sr.obs?`<div class="sr-obs">${sr.obs}</div>`:''}
     </div>`;
@@ -1356,10 +1391,22 @@ async function setType(type){
   renderStudents();renderPtTreinos();
 }
 function renderPtLetterRow(s){
-  const ws=TW[s.workoutType];
-  document.getElementById('pt-letter-row').innerHTML=ws.map(w=>
-    `<button class="letter-btn ${w===s.activeWorkout?'on':''}" onclick="ptSwitchW('${w}')">Treino ${w}</button>`
-  ).join('');
+  const base=TW[s.workoutType]||[];
+  const extras=s.extraLetters||[];
+  let html='';
+  base.forEach(b=>{
+    html+=`<button class="letter-btn ${b===s.activeWorkout?'on':''}" onclick="ptSwitchW('${b}')">Treino ${b}</button>`;
+    const v=b+'2';
+    if(extras.includes(v)){
+      html+=`<span class="letter-btn-wrap">
+        <button class="letter-btn ${v===s.activeWorkout?'on':''}" onclick="ptSwitchW('${v}')">Treino ${v}</button>
+        <button class="letter-btn-del" onclick="removeVariant('${s.id}','${v}')" title="Remover Treino ${v}">✕</button>
+      </span>`;
+    } else {
+      html+=`<button class="letter-btn-add" onclick="addVariant('${s.id}','${v}')">+ ${v}</button>`;
+    }
+  });
+  document.getElementById('pt-letter-row').innerHTML=html;
 }
 function ptSwitchW(w){
   const s=getStu(); if(!s) return;
