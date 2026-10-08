@@ -876,6 +876,34 @@ async function removeVariant(sid_,v){
 /* app do aluno: aba protocolo (barra inferior com 4 itens) */
 .bnav.has-proto .bnav-item{padding-left:0;padding-right:0;}
 
+
+/* ── MODAL PREMIUM (cadastro de aluno) ── */
+.modal2-overlay{position:fixed;inset:0;background:rgba(8,12,18,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:600;display:none;align-items:flex-start;justify-content:center;padding:44px 20px;overflow-y:auto;}
+.modal2-overlay.on{display:flex;}
+.modal2-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:820px;box-shadow:0 24px 64px rgba(10,16,28,.3);margin:auto;display:flex;flex-direction:column;max-height:calc(100dvh - 88px);overflow:hidden;animation:m2up .22s cubic-bezier(.3,1,.5,1);}
+@keyframes m2up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.modal2-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 26px 18px;border-bottom:1px solid var(--border);}
+.modal2-title{font-family:var(--fd);font-weight:700;font-size:20px;letter-spacing:-.3px;color:var(--ink);line-height:1.2;}
+.modal2-sub{font-family:var(--fb);font-size:13px;color:var(--ink3);margin-top:4px;}
+.modal2-close{background:var(--bg2);border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:var(--ink2);font-size:14px;flex-shrink:0;transition:background .13s,color .13s;}
+.modal2-close:hover{background:var(--fl-bg);color:var(--fl);}
+.modal2-body{padding:22px 26px 10px;overflow-y:auto;}
+.form-sec{margin-bottom:24px;}
+.form-sec-t{font-family:var(--fb);font-weight:600;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--hi);margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+.req{color:var(--fl);font-weight:700;}
+.fld-err{font-family:var(--fb);font-size:11.5px;color:var(--fl);margin-top:5px;}
+.grid-obj{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;}
+.modal2-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--border);background:var(--surface2);}
+.modal2-foot .pbtn{padding:12px 22px;font-size:14px;}
+.pbtn.loading{opacity:.75;pointer-events:none;}
+/* foco teal apenas no estado ativo (fi/sel/fta já usam var(--border); reforço do foco) */
+.modal2-card .fi:focus,.modal2-card .fta:focus,.modal2-card .sel:focus{border-color:var(--hi);box-shadow:0 0 0 3px var(--hi-soft);outline:none;}
+@media(max-width:640px){
+  .modal2-overlay{padding:0;}
+  .modal2-card{max-width:none;border-radius:0;min-height:100dvh;max-height:none;}
+  .grid-obj{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
@@ -1045,8 +1073,8 @@ async function removeVariant(sid_,v){
 
 <!-- ══════════════ PIN OVERLAY ══════════════ -->
 <div class="pin-overlay" id="pinOverlay">
-  <img src="logo.png" alt="LF Consultoria" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,194,212,0.3));">
-  <div class="pin-title2">LF Consultoria</div>
+  <img src="logo.png" alt="LFL" style="width:72px;height:72px;object-fit:cover;border-radius:16px;margin-bottom:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);">
+  <div class="pin-title2">Luiz Felipe Lazarette</div>
   <div class="pin-sub2" id="pinSub">Digite seu PIN de 4 dígitos</div>
   <div class="pin-dots" id="pinDots">
     <div class="pin-dot" id="pd0"></div>
@@ -1078,14 +1106,66 @@ async function removeVariant(sid_,v){
 
 <!-- ══════════════ MODALS ══════════════ -->
 <!-- student modal -->
-<div class="overlay" id="mStud">
-  <div class="sheet">
-    <div class="sh-handle"></div>
-    <div class="sh-title" id="mStudTitle">Novo Aluno</div>
-    <div class="fg"><label class="fl">Nome completo</label><input class="fi" type="text" id="s-name" placeholder="Nome..."></div>
-    <div class="sh-actions">
-      <button class="btn btn-out" onclick="closeModal('mStud')">Cancelar</button>
-      <button class="btn btn-hi" onclick="saveStud()">Salvar</button>
+<!-- modal premium: cadastro/edição de aluno -->
+<div class="modal2-overlay" id="mAluno" onclick="if(event.target===this)closeAluno()">
+  <div class="modal2-card" role="dialog" aria-modal="true">
+    <div class="modal2-head">
+      <div>
+        <div class="modal2-title" id="al-form-title">Novo aluno</div>
+        <div class="modal2-sub" id="al-form-sub">Cadastre um aluno para iniciar o acompanhamento personalizado.</div>
+      </div>
+      <button class="modal2-close" onclick="closeAluno()" aria-label="Fechar" title="Fechar (Esc)">✕</button>
+    </div>
+    <div class="modal2-body">
+      <div class="form-sec">
+        <div class="form-sec-t">Dados pessoais</div>
+        <div class="fg"><label class="fl">Nome completo <span class="req">*</span></label>
+          <input class="fi" id="al-nome" placeholder="Ex: Ana Souza" autocomplete="off" spellcheck="false">
+          <div class="fld-err" id="err-nome"></div>
+        </div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="fg"><label class="fl">Data de nascimento</label><input class="fi" type="date" id="al-nasc"></div>
+          <div class="fg"><label class="fl">Sexo</label>
+            <select class="sel" id="al-sexo"><option value="">—</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="form-sec-t">Contato</div>
+        <div class="grid-2">
+          <div class="fg"><label class="fl">E-mail</label><input class="fi" id="al-email" placeholder="email@exemplo.com" autocomplete="off"><div class="fld-err" id="err-email"></div></div>
+          <div class="fg"><label class="fl">Telefone / WhatsApp</label><input class="fi" id="al-fone" placeholder="(00) 00000-0000" inputmode="tel"><div class="fld-err" id="err-fone"></div></div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="form-sec-t">Perfil de treinamento</div>
+        <div class="grid-obj">
+          <div class="fg"><label class="fl">Objetivo principal</label>
+            <select class="sel" id="al-goal">
+              <option value="">Selecionar…</option>
+              <option value="hipertrofia">Hipertrofia</option>
+              <option value="emagrecimento">Emagrecimento</option>
+              <option value="condicionamento">Condicionamento físico</option>
+              <option value="forca">Ganho de força</option>
+              <option value="saude">Saúde e qualidade de vida</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Peso atual (kg)</label><input class="fi" id="al-peso" inputmode="decimal" placeholder="Ex: 70"></div>
+          <div class="fg"><label class="fl">Altura (cm)</label><input class="fi" id="al-altura" inputmode="decimal" placeholder="Ex: 170"></div>
+        </div>
+      </div>
+
+      <div class="form-sec">
+        <div class="form-sec-t">Observações</div>
+        <div class="fg"><label class="fl">Observações iniciais</label><textarea class="fta" id="al-obs" rows="3" placeholder="Anotações iniciais sobre o aluno (opcional)..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal2-foot">
+      <button class="pbtn pbtn-ghost" onclick="closeAluno()">Cancelar</button>
+      <button class="pbtn pbtn-primary" id="al-save-btn" onclick="saveStud()">Cadastrar aluno</button>
     </div>
   </div>
 </div>
@@ -2714,7 +2794,7 @@ function renderAlDetail(){
   const el=document.getElementById('al-detail'); if(!el) return;
   const s=getStu(activeSid);
   if(!s){ el.innerHTML='<div class="empty-pane"><div class="ei">👤</div><p>Selecione um aluno à esquerda<br>para ver os detalhes.</p></div>'; return; }
-  const goalLbl={hipertrofia:'Hipertrofia',emagrecimento:'Emagrecimento',performance:'Performance',reabilitacao:'Reabilitação'}[s.plan?.goal]||'Objetivo não definido';
+  const goalLbl=goalLabel(s.plan?.goal);
   const letters=getStuWorkouts(s);
   const chips = s.workoutType
     ? letters.map(w=>'<span class="al-chip" onclick="openEditor(\''+s.id+'\',\''+w+'\')">Treino '+w+'</span>').join('')
@@ -2803,7 +2883,7 @@ function renderEditor(){
   const s=getStu(edState.sid); if(!s){ ptNav('alunos'); return; }
   ptTopbar().style.display='none';
   const c=ptContent(); c.classList.add('flush');
-  const goalLbl={hipertrofia:'Hipertrofia',emagrecimento:'Emagrecimento',performance:'Performance',reabilitacao:'Reabilitação'}[s.plan?.goal]||'';
+  const goalLbl=(s.plan&&s.plan.goal)?goalLabel(s.plan.goal):'';
   const sub=(goalLbl?goalLbl+' · ':'')+'Treino '+edState.w;
   c.innerHTML=
     '<div class="ed">'+
@@ -3185,8 +3265,10 @@ function avalFormHtml(){
   '<div class="pc"><div class="pc-t">Objetivo</div><div class="goal-g">'+
     '<button class="goal-b" id="g-hipertrofia" onclick="setGoal(\'hipertrofia\')">Hipertrofia</button>'+
     '<button class="goal-b" id="g-emagrecimento" onclick="setGoal(\'emagrecimento\')">Emagrecimento</button>'+
-    '<button class="goal-b" id="g-performance" onclick="setGoal(\'performance\')">Performance</button>'+
-    '<button class="goal-b" id="g-reabilitacao" onclick="setGoal(\'reabilitacao\')">Reabilitação</button></div></div>'+
+    '<button class="goal-b" id="g-condicionamento" onclick="setGoal(\'condicionamento\')">Condicionamento</button>'+
+    '<button class="goal-b" id="g-forca" onclick="setGoal(\'forca\')">Ganho de força</button>'+
+    '<button class="goal-b" id="g-saude" onclick="setGoal(\'saude\')">Saúde e qualidade de vida</button>'+
+    '<button class="goal-b" id="g-outro" onclick="setGoal(\'outro\')">Outro</button></div></div>'+
   '<div class="pc"><div class="pc-t">Planejamento</div>'+
     '<div class="fg"><label class="fl">Frequência semanal</label><div class="freq-r">'+
     '<button class="freq-b" onclick="setFreq(2)">2×</button><button class="freq-b" onclick="setFreq(3)">3×</button><button class="freq-b" onclick="setFreq(4)">4×</button><button class="freq-b" onclick="setFreq(5)">5×</button><button class="freq-b" onclick="setFreq(6)">6×</button></div></div>'+
@@ -3217,7 +3299,7 @@ function fillAvalForm(s){
   if(g('p-fat')) g('p-fat').value=p.fat||'';
   if(g('p-strategy')) g('p-strategy').value=p.strategy||'';
   if(g('p-obs')) g('p-obs').value=p.obs||'';
-  ['hipertrofia','emagrecimento','performance','reabilitacao'].forEach(x=>{const b=g('g-'+x); if(b) b.classList.toggle('on',p.goal===x);});
+  ['hipertrofia','emagrecimento','condicionamento','forca','saude','outro'].forEach(x=>{const b=g('g-'+x); if(b) b.classList.toggle('on',p.goal===x);});
   document.querySelectorAll('.freq-b').forEach(b=>b.classList.toggle('on',parseInt(b.textContent)===p.freq));
   ['chest','waist','hip','arm','thigh','calf'].forEach(k=>{const el=g('m-'+k); if(el) el.value=m[k]||'';});
   if(g('pt-weightLog')) g('pt-weightLog').innerHTML=renderWeightLogHTML(s.weightLog||[]);
@@ -3248,7 +3330,7 @@ function renderAlDetail(){
   const el=document.getElementById('al-detail'); if(!el) return;
   const s=getStu(activeSid);
   if(!s){ el.innerHTML='<div class="empty-pane"><div class="ei">👤</div><p>Selecione um aluno à esquerda<br>para ver os detalhes.</p></div>'; return; }
-  const goalLbl={hipertrofia:'Hipertrofia',emagrecimento:'Emagrecimento',performance:'Performance',reabilitacao:'Reabilitação'}[s.plan?.goal]||'Objetivo não definido';
+  const goalLbl=goalLabel(s.plan?.goal);
   const hasProto=(s.protocols||[]).length>0;
   el.innerHTML=
     '<div class="prof-head">'+
@@ -3484,6 +3566,100 @@ async function protoAddAcomp(){
   protoMarkSaved('saving'); await protoPersist(p); protoMarkSaved('saved');
 }
 function protoDelAcomp(i){ const p=protoGet(); if(!p) return; p.acompanhamento.splice(i,1); renderProfContent(); protoDirty(); }
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   CADASTRO DE ALUNO — modal premium (sobrepõe openStudModal/saveStud)
+═══════════════════════════════════════════════════════════ */
+const GOAL_LBL={hipertrofia:'Hipertrofia',emagrecimento:'Emagrecimento',condicionamento:'Condicionamento físico',forca:'Ganho de força',saude:'Saúde e qualidade de vida',performance:'Performance',reabilitacao:'Reabilitação',outro:'Outro'};
+function goalLabel(g){ return GOAL_LBL[g]||'Objetivo não definido'; }
+
+function openStudModal(id){
+  editSid=id||null;
+  const s=id?getStu(id):null; const p=s?(s.plan||{}):{};
+  const g=i=>document.getElementById(i);
+  g('al-form-title').textContent=id?'Editar aluno':'Novo aluno';
+  g('al-form-sub').textContent=id?'Atualize os dados do aluno.':'Cadastre um aluno para iniciar o acompanhamento personalizado.';
+  g('al-save-btn').textContent=id?'Salvar alterações':'Cadastrar aluno';
+  g('al-nome').value=s?s.name:'';
+  g('al-nasc').value=p.birthdate||'';
+  g('al-sexo').value=p.sex||'';
+  g('al-email').value=p.email||'';
+  g('al-fone').value=p.phone||'';
+  g('al-goal').value=p.goal||'';
+  g('al-peso').value=p.weight||'';
+  g('al-altura').value=p.height||'';
+  g('al-obs').value=p.obs||'';
+  ['err-nome','err-email','err-fone'].forEach(e=>g(e).textContent='');
+  g('al-save-btn').classList.remove('loading');
+  g('mAluno').classList.add('on');
+  setTimeout(()=>g('al-nome').focus(),80);
+}
+function closeAluno(){
+  if(document.getElementById('al-save-btn').classList.contains('loading')) return;
+  document.getElementById('mAluno').classList.remove('on');
+}
+function alEmailValido(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function alFoneValido(v){ return v.replace(/\D/g,'').length>=8; }
+
+async function saveStud(){
+  const g=i=>document.getElementById(i);
+  const name=g('al-nome').value.trim();
+  const email=g('al-email').value.trim();
+  const phone=g('al-fone').value.trim();
+  g('err-nome').textContent=''; g('err-email').textContent=''; g('err-fone').textContent='';
+  let ok=true;
+  if(!name){ g('err-nome').textContent='Informe o nome completo.'; g('al-nome').focus(); ok=false; }
+  if(email && !alEmailValido(email)){ g('err-email').textContent='E-mail inválido.'; ok=false; }
+  if(phone && !alFoneValido(phone)){ g('err-fone').textContent='Telefone inválido.'; ok=false; }
+  if(!ok) return;
+
+  const planFields={
+    birthdate:g('al-nasc').value, sex:g('al-sexo').value, email, phone,
+    goal:g('al-goal').value, weight:g('al-peso').value.trim(), height:g('al-altura').value.trim(),
+    obs:g('al-obs').value.trim()
+  };
+  const btn=g('al-save-btn'); const orig=btn.textContent;
+  btn.classList.add('loading'); btn.textContent='Salvando…';
+  try{
+    let targetId=editSid;
+    if(editSid){
+      const s=getStu(editSid); if(!s) throw new Error('aluno não encontrado');
+      s.name=name; s.plan={...(s.plan||{}),...planFields};
+      await supaPatch('alunos',`?id=eq.${editSid}`,{nome:name});
+      await persist(s);
+    } else {
+      const res=await supaPost('alunos',{nome:name,presencas:0});
+      if(!(res&&res[0])) throw new Error('falha ao criar');
+      const a=res[0];
+      const newStu={id:a.id,name:a.nome,presences:0,workoutType:null,activeWorkout:'A',extraLetters:[],exercises:{},history:[],protocols:[],plan:{...planFields},measures:{},weightLog:[],photos:[],_treinoId:null,_avaliacaoId:null,_fotoIds:[]};
+      DB.students.push(newStu); targetId=a.id;
+      await persist(newStu);
+    }
+    btn.classList.remove('loading'); btn.textContent=orig;
+    document.getElementById('mAluno').classList.remove('on');
+    toast(editSid?'✓ Aluno atualizado':'✓ Aluno cadastrado');
+    // abrir o perfil do aluno
+    activeSid=targetId; if(typeof alProfTab!=='undefined'){alProfTab='visao';} if(typeof protoEditId!=='undefined'){protoEditId=null;}
+    if(typeof ptView!=='undefined' && ptView==='alunos'){ renderAlItems(); renderAlDetail(); }
+    else if(typeof ptNav==='function'){ ptNav('alunos'); }
+  }catch(e){
+    console.error('saveStud',e);
+    btn.classList.remove('loading'); btn.textContent=orig;
+    g('err-nome').textContent='Não foi possível salvar. Verifique a conexão e tente novamente.';
+    toast('Erro ao salvar',true);
+    // dados preservados (modal permanece aberto)
+  }
+}
+
+/* Esc fecha o modal de aluno (respeitando o salvamento) */
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    const m=document.getElementById('mAluno');
+    if(m&&m.classList.contains('on')) closeAluno();
+  }
+});
 
 
 /* ═══════════════════════════════════════
