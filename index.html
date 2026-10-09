@@ -904,6 +904,37 @@ async function removeVariant(sid_,v){
   .grid-obj{grid-template-columns:1fr;}
 }
 
+
+/* ── RESPONSIVO: área profissional (perfil do aluno, editor) ── */
+.prof-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.prof-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.prof-tabs::-webkit-scrollbar{display:none;}
+.prof-tab{flex:0 0 auto;white-space:nowrap;}
+
+@media(max-width:860px){
+  .prof-head{flex-wrap:wrap;gap:12px 14px;}
+  .al-d-h-main{flex:1 1 50%;min-width:0;}
+  .prof-actions{flex:1 1 100%;}
+  .prof-actions .pbtn{flex:1;justify-content:center;}
+  .al-d-grid{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+  .al-detail{padding:18px 16px;}
+  .al-d-av{width:52px;height:52px;font-size:21px;}
+  .al-d-name{font-size:20px;}
+  /* editor */
+  .ed-top{flex-wrap:wrap;gap:10px;}
+  .ed-top .ed-save-state{display:none;}
+  .ed-ttl .t{font-size:17px;}
+  .ex-card-body{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .set-table{min-width:560px;}
+  .ed-foot{flex-direction:column;gap:4px;align-items:flex-start;}
+  /* dashboard / topbar */
+  .pt-topbar{flex-wrap:wrap;gap:10px 12px;min-height:0;}
+  .pt-tb-actions{flex-wrap:wrap;}
+  .pt-tb-actions .pbtn{flex:0 0 auto;}
+}
+
 </style>
 </head>
 <body>
@@ -3336,9 +3367,11 @@ function renderAlDetail(){
     '<div class="prof-head">'+
       '<div class="al-d-av">'+(s.name||'?')[0].toUpperCase()+'</div>'+
       '<div class="al-d-h-main"><div class="al-d-name">'+esc(s.name)+'</div><div class="al-d-obj">'+goalLbl+'</div></div>'+
-      '<button class="pbtn pbtn-ghost pbtn-sm" onclick="openStudModal(\''+s.id+'\')">Editar</button>'+
-      '<button class="pbtn pbtn-ghost pbtn-sm pbtn-danger" onclick="delStud(\''+s.id+'\')">Excluir</button>'+
-      '<button class="pbtn pbtn-primary pbtn-sm" onclick="openEditor(\''+s.id+'\')">'+IC.dumbbell+' Montar treino</button>'+
+      '<div class="prof-actions">'+
+        '<button class="pbtn pbtn-ghost pbtn-sm" onclick="openStudModal(\''+s.id+'\')">Editar</button>'+
+        '<button class="pbtn pbtn-ghost pbtn-sm pbtn-danger" onclick="delStud(\''+s.id+'\')">Excluir</button>'+
+        '<button class="pbtn pbtn-primary pbtn-sm" onclick="openEditor(\''+s.id+'\')">'+IC.dumbbell+' Montar treino</button>'+
+      '</div>'+
     '</div>'+
     '<div class="prof-tabs">'+
       profTabBtn('visao','Visão geral')+profTabBtn('treinos','Treinos')+profTabBtn('avaliacoes','Avaliações')+profTabBtn('protocolos','Protocolos'+(hasProto?'':''))+
