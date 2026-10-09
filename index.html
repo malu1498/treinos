@@ -504,7 +504,15 @@ async function removeVariant(sid_,v){
 /* ── EXERCÍCIO (card premium) ── */
 .xc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:11px;box-shadow:var(--sh);overflow:hidden;transition:box-shadow .18s;}
 .xc.open{box-shadow:var(--sh2);}
-.xc-head{width:100%;display:flex;align-items:center;gap:12px;padding:16px 16px;background:none;border:none;cursor:pointer;text-align:left;}
+.xc-head{display:flex;align-items:center;gap:11px;padding:14px 16px;}
+.xc-head-main{display:flex;align-items:center;gap:11px;flex:1;min-width:0;cursor:pointer;background:none;border:none;text-align:left;padding:0;}
+.xc-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border2);background:var(--surface);cursor:pointer;position:relative;padding:0;flex-shrink:0;transition:border-color .18s,background .18s;}
+.xc-done::after{content:'';position:absolute;top:47%;left:50%;width:7px;height:12px;border-right:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:translate(-50%,-60%) rotate(45deg) scale(0);opacity:0;transition:transform .22s cubic-bezier(.3,1.5,.5,1),opacity .18s;}
+.xc-done.on{background:var(--green);border-color:var(--green);}
+.xc-done.on::after{transform:translate(-50%,-60%) rotate(45deg) scale(1);opacity:1;}
+[data-theme="dark"] .xc-done.on::after{border-color:#04121f;}
+.xc.done{border-color:var(--green);}
+.xc.done .xc-head{background:var(--green-bg);}
 .xc-chev{width:22px;height:22px;flex-shrink:0;border-radius:7px;background:var(--bg2);position:relative;transition:all .2s;}
 .xc-chev::after{content:'';position:absolute;width:6px;height:6px;border-right:1.6px solid var(--ink2);border-bottom:1.6px solid var(--ink2);top:46%;left:50%;transform:translate(-50%,-60%) rotate(45deg);transition:transform .25s;}
 .xc.open .xc-chev{background:var(--hi-soft);}
@@ -518,7 +526,10 @@ async function removeVariant(sid_,v){
 .xc-inner{padding:2px 16px 8px;}
 
 /* ── SÉRIE ── */
-.set{display:grid;grid-template-columns:1fr auto 30px;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--border);}
+.set{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--border);}
+.set-id{display:flex;align-items:center;gap:9px;min-width:0;}
+.set-n{width:24px;height:24px;border-radius:7px;background:var(--bg2);color:var(--ink);font-family:var(--fd);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.set.done .set-n{background:var(--green-bg);color:var(--green);}
 .set:first-child{border-top:none;}
 .set-left{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .set-i{font-family:var(--fb);font-size:13px;font-weight:600;color:var(--ink);}
@@ -1945,15 +1956,31 @@ function renderStuExCard(ex,s,w,mod,exIdx,key){
   const body = series.length
     ? series.map((sr,si)=>renderStuSrRow(sr,s.id,w,mod,exIdx,si)).join('')
     : `<div class="set-empty">Nenhuma série cadastrada.</div>`;
+  const doneBtn = series.length
+    ? `<button class="xc-done ${allDone?'on':''}" aria-label="Marcar exercício como concluído" onclick="stuToggleExDone('${key}',${exIdx})"></button>`
+    : '';
   return `
     <div class="xc ${open?'open':''} ${allDone?'done':''}" id="sex-${key}-${exIdx}">
-      <button class="xc-head" onclick="stuToggleEx('${key}',${exIdx})">
-        <span class="xc-chev"></span>
-        <span class="xc-name">${esc(ex.name)||'Sem nome'}</span>
+      <div class="xc-head">
+        <button class="xc-head-main" onclick="stuToggleEx('${key}',${exIdx})">
+          <span class="xc-chev"></span>
+          <span class="xc-name">${esc(ex.name)||'Sem nome'}</span>
+        </button>
         <span class="xc-count">${doneC}/${series.length}</span>
-      </button>
+        ${doneBtn}
+      </div>
       <div class="xc-body"><div><div class="xc-inner">${body}</div></div></div>
     </div>`;
+}
+
+/* renderiza observação com segurança: só negrito/itálico, sem tags visíveis nem HTML arbitrário */
+function obsSafe(raw){
+  if(!raw) return '';
+  let s=esc(String(raw));
+  s=s.replace(/&lt;(\/?)(b|strong|i|em)&gt;/gi,'<$1$2>');
+  s=s.replace(/&lt;br\s*\/?&gt;/gi,'<br>');
+  s=s.replace(/&lt;\/?[a-z][^&]*?&gt;/gi,''); // remove quaisquer outras tags escapadas (div/span/etc)
+  return s;
 }
 
 function renderStuSrRow(sr,sid_,w,mod,exIdx,si){
@@ -1961,23 +1988,40 @@ function renderStuSrRow(sr,sid_,w,mod,exIdx,si){
   const lbl=BADGE_LBL[sr.type]||sr.type;
   return `
     <div class="set set-${bdg} ${sr.completed?'done':''}" id="ssr-${sid_}-${w}-${mod}-${exIdx}-${si}">
-      <div class="set-left">
-        <span class="set-i">Série ${si+1}</span>
+      <div class="set-id">
+        <span class="set-n">${si+1}</span>
         <span class="set-type">${lbl}</span>
       </div>
       <div class="set-meta">
         <span class="set-rep">${esc(sr.reps)||'—'}<i>reps</i></span>
         <label class="set-w">
           <input type="text" inputmode="decimal" value="${esc(sr.weight||'')}" placeholder="—"
-                 onchange="stuSetWeight('${sid_}','${w}','${mod}',${exIdx},${si},this.value)"
-                 onclick="event.stopPropagation()">
+                 onchange="stuSetWeight('${sid_}','${w}','${mod}',${exIdx},${si},this.value)">
           <i>kg</i>
         </label>
       </div>
-      <button class="set-chk ${sr.completed?'on':''}" aria-label="Concluir série"
-              onclick="stuToggleSr('${sid_}','${w}','${mod}',${exIdx},${si})"></button>
-      ${sr.obs?`<div class="set-obs">${esc(sr.obs)}</div>`:''}
+      ${sr.obs?`<div class="set-obs">${obsSafe(sr.obs)}</div>`:''}
     </div>`;
+}
+
+/* conclusão por EXERCÍCIO: marca/desmarca todas as séries do exercício */
+async function stuToggleExDone(key,exIdx){
+  const s=currentStu; if(!s) return;
+  const ex=(s.exercises[key]||[])[exIdx]; if(!ex) return;
+  const series=ex.series||[]; if(!series.length) return;
+  const allDone=series.every(x=>x.completed);
+  const newState=!allDone;
+  series.forEach(x=>{ x.completed=newState; });
+  const card=document.getElementById(`sex-${key}-${exIdx}`);
+  if(card){
+    card.classList.toggle('done',newState);
+    const circ=card.querySelector('.xc-done'); if(circ) circ.classList.toggle('on',newState);
+    const cnt=card.querySelector('.xc-count'); if(cnt) cnt.textContent=`${newState?series.length:0}/${series.length}`;
+    card.querySelectorAll('.set').forEach(r=>r.classList.toggle('done',newState));
+  }
+  updateModoProgress(s);
+  await persist(s);
+  await persistPresences(s);
 }
 
 function stuToggleEx(key,exIdx){
